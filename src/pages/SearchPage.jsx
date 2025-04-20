@@ -35,7 +35,7 @@ const SearchPage = () => {
   }, []);
 
   const handleReservation = (trajetId) => {
-    navigate(`/reserver/${trajetId}`);
+    navigate(`/reservation/${trajetId}`);
   };
 
   if (loading) {

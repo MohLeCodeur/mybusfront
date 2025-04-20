@@ -45,20 +45,24 @@ const ReservationPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    
+  
     try {
-      await axios.post('http://localhost:5000/api/reservations', {
-        trajetId,
-        client: formData,
-        placesReservees: 1 // Par défaut 1 place
-      });
-      navigate('/confirmation');
+      // Envoi de la réservation et récupération de l'ID créé
+      const response = await axios.post(
+        'http://localhost:5000/api/reservations',
+        { trajetId, client: formData, placesReservees: 1 }
+      );
+      const reservationId = response.data._id;
+  
+      // Navigation vers la page de confirmation avec le bon paramètre
+      navigate(`/confirmation/${reservationId}`);
     } catch (err) {
       setError(err.response?.data?.message || 'Échec de la réservation');
     } finally {
       setSubmitting(false);
     }
   };
+  
 
   if (loading) {
     return (

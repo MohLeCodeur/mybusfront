@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Container, Typography, Button, Paper, Grid } from '@mui/material';
 import { Link } from 'react-router-dom';
-import heroImage from '../assets/malibus.png'; // Vous devrez ajouter cette image
+import heroImage from '../assets/malibus.png';
 
 const HomePage = () => {
   return (
@@ -9,7 +9,10 @@ const HomePage = () => {
       {/* Hero Section */}
       <Box
         sx={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), url(${heroImage})`,
+          backgroundImage: `
+            linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+            url(${heroImage})
+          `,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           height: '500px',
