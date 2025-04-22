@@ -1,11 +1,13 @@
+// src/pages/ReservationPage.jsx
+
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, 
-  Box, 
-  Typography, 
-  TextField, 
-  Button, 
-  Paper, 
+import {
+  Container,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Paper,
   Grid,
   Alert,
   CircularProgress
@@ -16,6 +18,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 const ReservationPage = () => {
   const { trajetId } = useParams();
   const navigate = useNavigate();
+
   const [trajet, setTrajet] = useState(null);
   const [formData, setFormData] = useState({
     nom: '',
@@ -27,13 +30,15 @@ const ReservationPage = () => {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Chargement des détails du trajet
   useEffect(() => {
     const fetchTrajet = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/trajets/${trajetId}`);
+        const response = await axios.get(
+          `http://localhost:5000/api/trajets/${trajetId}`
+        );
         setTrajet(response.data);
       } catch {
-        // On ne garde pas la variable 'err' puisqu'on ne l'utilise pas
         setError('Impossible de charger les détails du trajet');
       } finally {
         setLoading(false);
@@ -45,24 +50,31 @@ const ReservationPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-  
+    setError(null);
+
     try {
-      // Envoi de la réservation et récupération de l'ID créé
-      const response = await axios.post(
+      // 1) Création de la réservation
+      const res1 = await axios.post(
         'http://localhost:5000/api/reservations',
         { trajetId, client: formData, placesReservees: 1 }
       );
-      const reservationId = response.data._id;
-  
-      // Navigation vers la page de confirmation avec le bon paramètre
-      navigate(`/confirmation/${reservationId}`);
+      const reservationId = res1.data._id;
+
+      // 2) Initialisation du paiement CinetPay
+      const res2 = await axios.post(
+        'http://localhost:5000/api/payments',
+        { reservationId }
+      );
+      const { payment_url } = res2.data;
+
+      // 3) Redirection vers l'interface CinetPay
+      window.location.href = payment_url;
     } catch (err) {
-      setError(err.response?.data?.message || 'Échec de la réservation');
+      setError(err.response?.data?.message || 'Une erreur est survenue');
     } finally {
       setSubmitting(false);
     }
   };
-  
 
   if (loading) {
     return (
@@ -72,12 +84,12 @@ const ReservationPage = () => {
     );
   }
 
-  if (error || !trajet) {
+  if (error && !trajet) {
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Alert severity="error">{error || 'Trajet non trouvé'}</Alert>
-        <Button 
-          variant="contained" 
+        <Alert severity="error">{error}</Alert>
+        <Button
+          variant="contained"
           sx={{ mt: 2 }}
           onClick={() => navigate('/')}
         >
@@ -89,43 +101,59 @@ const ReservationPage = () => {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ 
-        fontWeight: 'bold',
-        mb: 4,
-        color: 'primary.main'
-      }}>
+      <Typography
+        variant="h4"
+        component="h1"
+        gutterBottom
+        sx={{ fontWeight: 'bold', mb: 4, color: 'primary.main' }}
+      >
         Finaliser votre réservation
       </Typography>
 
       <Grid container spacing={4}>
-        {/* Colonne de gauche : Récapitulatif */}
+        {/* Détails du trajet */}
         <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
               Détails du trajet
             </Typography>
-            
             <Box sx={{ mb: 2 }}>
-              <Typography><strong>Itinéraire :</strong> {trajet.villeDepart} → {trajet.villeArrivee}</Typography>
-              <Typography><strong>Date :</strong> {new Date(trajet.dateDepart).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>
-              <Typography><strong>Heure de départ :</strong> {trajet.heureDepart}</Typography>
-              <Typography><strong>Prix :</strong> {trajet.prix?.toLocaleString('fr-FR')} FCFA</Typography>
+              <Typography>
+                <strong>Itinéraire :</strong> {trajet.villeDepart} → {trajet.villeArrivee}
+              </Typography>
+              <Typography>
+                <strong>Date :</strong>{' '}
+                {new Date(trajet.dateDepart).toLocaleDateString('fr-FR', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long'
+                })}
+              </Typography>
+              <Typography>
+                <strong>Heure de départ :</strong> {trajet.heureDepart}
+              </Typography>
+              <Typography>
+                <strong>Prix :</strong> {trajet.prix?.toLocaleString('fr-FR')} FCFA
+              </Typography>
             </Box>
-
             <Alert severity="info">
               Vous réservez 1 place sur le bus {trajet.bus?.numero}
             </Alert>
           </Paper>
         </Grid>
 
-        {/* Colonne de droite : Formulaire */}
+        {/* Formulaire client */}
         <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
               Vos informations
             </Typography>
-            
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
 
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
@@ -135,7 +163,9 @@ const ReservationPage = () => {
                     fullWidth
                     required
                     value={formData.nom}
-                    onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, nom: e.target.value })
+                    }
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -144,7 +174,9 @@ const ReservationPage = () => {
                     fullWidth
                     required
                     value={formData.prenom}
-                    onChange={(e) => setFormData({...formData, prenom: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, prenom: e.target.value })
+                    }
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -154,7 +186,9 @@ const ReservationPage = () => {
                     fullWidth
                     required
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -163,8 +197,10 @@ const ReservationPage = () => {
                     fullWidth
                     required
                     value={formData.telephone}
-                    onChange={(e) => setFormData({...formData, telephone: e.target.value})}
-                    inputProps={{ pattern: "[0-9]{8,15}" }}
+                    onChange={(e) =>
+                      setFormData({ ...formData, telephone: e.target.value })
+                    }
+                    inputProps={{ pattern: '[0-9]{8,15}' }}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -177,7 +213,7 @@ const ReservationPage = () => {
                     disabled={submitting}
                     sx={{ mt: 2, py: 1.5 }}
                   >
-                    {submitting ? <CircularProgress size={24} /> : 'Confirmer la réservation'}
+                    {submitting ? <CircularProgress size={24} /> : 'Payer maintenant'}
                   </Button>
                 </Grid>
               </Grid>
