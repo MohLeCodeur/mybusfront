@@ -34,23 +34,28 @@ export default function ReservationPage() {
   }, [trajetId]);
 
   // Soumettre la réservation
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError(null);
-    try {
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/reservations`,
-        { trajetId, client: formData, placesReservees: 1 }
-      );
-      const { checkoutUrl } = res.data;
-      window.location.href = checkoutUrl; // redirection vers VitePay
-    } catch (err) {
-      setError(err.response?.data?.message || 'Échec de la réservation');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  // À placer en haut de votre fichier, juste après les imports
+const API_BASE = 'https://mybusback.onrender.com';
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setSubmitting(true);
+  setError(null);
+
+  try {
+    const res = await axios.post(
+      `${API_BASE}/api/reservations`,
+      { trajetId, client: formData, placesReservees: 1 }
+    );
+    const { checkoutUrl } = res.data;
+    // Redirection vers l'interface VitePay
+    window.location.href = checkoutUrl;
+  } catch (err) {
+    setError(err.response?.data?.message || 'Échec de la réservation');
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   // Affichage en cours de chargement
   if (loading) {
