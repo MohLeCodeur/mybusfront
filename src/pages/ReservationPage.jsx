@@ -9,19 +9,18 @@ import {
   Button,
   Paper,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Grid
 } from '@mui/material';
-import { Grid } from '@mui/material';
-
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 
-// Base URL du back‐end
+// URL fixe de votre back-end Render
 const API_BASE = 'https://mybusback.onrender.com';
 
 export default function ReservationPage() {
   const { trajetId } = useParams();
-  const navigate = useNavigate();
+  const navigate   = useNavigate();
 
   const [trajet, setTrajet]       = useState(null);
   const [formData, setFormData]   = useState({ nom: '', prenom: '', email: '', telephone: '' });
@@ -29,6 +28,7 @@ export default function ReservationPage() {
   const [error, setError]         = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Charger les détails du trajet
   useEffect(() => {
     axios.get(`${API_BASE}/api/trajets/${trajetId}`)
       .then(res => setTrajet(res.data))
@@ -36,18 +36,23 @@ export default function ReservationPage() {
       .finally(() => setLoading(false));
   }, [trajetId]);
 
+  // Soumettre la réservation puis rediriger vers VitePay
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+
     try {
       const res = await axios.post(
         `${API_BASE}/api/reservations`,
         { trajetId, client: formData, placesReservees: 1 }
       );
-      window.location.href = res.data.checkoutUrl;
+      // backend renvoie soit `checkoutUrl`, soit `redirect_url`
+      const redirectUrl = res.data.checkoutUrl || res.data.redirect_url;
+      if (!redirectUrl) throw new Error('Aucune URL de paiement reçue');
+      window.location.href = redirectUrl;
     } catch (err) {
-      setError(err.response?.data?.message || 'Échec de la réservation');
+      setError(err.response?.data?.message || err.message || 'Échec de la réservation');
     } finally {
       setSubmitting(false);
     }
@@ -77,8 +82,10 @@ export default function ReservationPage() {
       <Typography variant="h4" gutterBottom sx={{ fontWeight:'bold' }}>
         Finaliser votre réservation
       </Typography>
+
       <Grid container spacing={4}>
-        <Grid xs={12} md={6}>
+        {/* Détails du trajet */}
+        <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p:3 }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight:'bold' }}>
               Détails du trajet
@@ -105,17 +112,21 @@ export default function ReservationPage() {
             </Alert>
           </Paper>
         </Grid>
-        <Grid xs={12} md={6}>
+
+        {/* Formulaire client */}
+        <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p:3 }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight:'bold' }}>
               Vos informations
             </Typography>
+
             {error && trajet && (
               <Alert severity="error" sx={{ mb:2 }}>{error}</Alert>
             )}
+
             <Box component="form" onSubmit={handleSubmit} noValidate>
               <Grid container spacing={2}>
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     label="Nom"
                     value={formData.nom}
@@ -123,7 +134,7 @@ export default function ReservationPage() {
                     fullWidth required
                   />
                 </Grid>
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     label="Prénom"
                     value={formData.prenom}
@@ -131,7 +142,7 @@ export default function ReservationPage() {
                     fullWidth required
                   />
                 </Grid>
-                <Grid xs={12}>
+                <Grid item xs={12}>
                   <TextField
                     label="Email"
                     type="email"
@@ -140,7 +151,7 @@ export default function ReservationPage() {
                     fullWidth required
                   />
                 </Grid>
-                <Grid xs={12}>
+                <Grid item xs={12}>
                   <TextField
                     label="Téléphone"
                     value={formData.telephone}
@@ -149,7 +160,7 @@ export default function ReservationPage() {
                     inputProps={{ pattern:'[0-9]{8,15}' }}
                   />
                 </Grid>
-                <Grid xs={12}>
+                <Grid item xs={12}>
                   <Button
                     type="submit"
                     variant="contained"
@@ -160,7 +171,8 @@ export default function ReservationPage() {
                   >
                     {submitting
                       ? <CircularProgress size={24}/>
-                      : 'Payer maintenant'}
+                      : 'Payer maintenant'
+                    }
                   </Button>
                 </Grid>
               </Grid>
