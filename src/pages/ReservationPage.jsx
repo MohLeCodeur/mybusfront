@@ -50,31 +50,21 @@ const ReservationPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setError(null);
-
     try {
-      // 1) Création de la réservation
-      const res1 = await axios.post(
-        'http://localhost:5000/api/reservations',
-        { trajetId, client: formData, placesReservees: 1 }
-      );
-      const reservationId = res1.data._id;
-
-      // 2) Initialisation du paiement CinetPay
-      const res2 = await axios.post(
-        'http://localhost:5000/api/payments',
-        { reservationId }
-      );
-      const { payment_url } = res2.data;
-
-      // 3) Redirection vers l'interface CinetPay
-      window.location.href = payment_url;
+      const response = await axios.post('http://localhost:5000/api/reservations', {
+        trajetId,
+        client: formData,
+        placesReservees: 1
+      });
+      // On récupère l'URL de checkout et on redirige
+      window.location.href = response.data.checkoutUrl;
     } catch (err) {
-      setError(err.response?.data?.message || 'Une erreur est survenue');
+      setError(err.response?.data?.message || 'Échec de la réservation');
     } finally {
       setSubmitting(false);
     }
   };
+  
 
   if (loading) {
     return (
