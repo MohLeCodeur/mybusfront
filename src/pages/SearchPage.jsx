@@ -23,7 +23,7 @@ const SearchPage = () => {
   useEffect(() => {
     const fetchTrajets = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/trajets');
+        const response = await axios.get('https://mybusback.onrender.com/api/trajets');
         setTrajets(response.data);
       } catch (err) {
         setError(err.response?.data?.message || 'Erreur lors du chargement');

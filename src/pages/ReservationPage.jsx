@@ -35,7 +35,7 @@ const ReservationPage = () => {
     const fetchTrajet = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/trajets/${trajetId}`
+          `https://mybusback.onrender.com/api/trajets/${trajetId}`
         );
         setTrajet(response.data);
       } catch {
@@ -51,7 +51,7 @@ const ReservationPage = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/reservations', {
+      const response = await axios.post('https://mybusback.onrender.com/api/reservations', {
         trajetId,
         client: formData,
         placesReservees: 1
