@@ -8,7 +8,7 @@ const Navbar = () => {
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            Transport Mali
+            MyBus
           </Link>
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
