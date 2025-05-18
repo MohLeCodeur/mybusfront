@@ -34,24 +34,131 @@ export default function ConfirmationPage() {
   }, [reservationId]);
 
   const handleDownloadTicket = async () => {
-  if (!ticketRef.current) return;
-  
   setDownloading(true);
   
   try {
-    // Sauvegarder les éléments avec gradients
-    const elementsWithGradients = ticketRef.current.querySelectorAll('.bg-gradient-to-r, .bg-gradient-to-br');
+    // Créons une version simplifiée du billet dans un div séparé et caché
+    const pdfContainer = document.createElement('div');
+    pdfContainer.style.position = 'absolute';
+    pdfContainer.style.left = '-9999px';
+    pdfContainer.style.top = '-9999px';
+    document.body.appendChild(pdfContainer);
     
-    // Remplacer temporairement les gradients par des couleurs simples
-    elementsWithGradients.forEach(el => {
-      el.setAttribute('data-original-class', el.className);
-      el.className = el.className
-        .replace('bg-gradient-to-r from-pink-500 to-blue-600', 'bg-blue-500')
-        .replace('bg-gradient-to-br from-white to-indigo-50', 'bg-gray-100');
-    });
+    // Contenu du ticket avec des styles simples (pas de gradients)
+    // Notez que j'utilise des styles inline au lieu des classes Tailwind
+    pdfContainer.innerHTML = `
+      <div style="width: 800px; background-color: white; border: 1px solid #e5e7eb; border-radius: 1rem; overflow: hidden; font-family: Arial, sans-serif;">
+        <div style="background-color: #3b82f6; padding: 1.5rem 2rem; color: white;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h2 style="font-size: 1.5rem; font-weight: bold; margin: 0;">MyBus</h2>
+              <p style="font-size: 0.875rem; opacity: 0.9; margin-top: 0.25rem;">E-Ticket de voyage</p>
+            </div>
+          </div>
+        </div>
+        
+        <div style="padding: 2rem;">
+          <div style="border-top: 2px dashed #e5e7eb; position: relative; margin: 0 -2rem 2rem -2rem;"></div>
+          
+          <div style="margin-bottom: 1.5rem; text-align: center;">
+            <span style="font-size: 0.875rem; color: #6b7280;">Réservation</span>
+            <h3 style="font-size: 1.25rem; font-weight: bold; color: #1f2937; margin-top: 0.25rem;">${reservationId}</h3>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+              <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Départ</div>
+              <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;">${reservation.trajet.villeDepart}</div>
+            </div>
+            
+            <div style="text-align: center;">
+              <div style="font-size: 1.875rem; color: #3b82f6; margin-bottom: 0.5rem;">→</div>
+              <div style="width: 6rem; height: 0.125rem; background-color: #3b82f6;"></div>
+            </div>
+            
+            <div>
+              <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Arrivée</div>
+              <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;">${reservation.trajet.villeArrivee}</div>
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center;">
+              <div style="background-color: #dbeafe; border-radius: 9999px; padding: 0.75rem; margin-right: 1rem;">
+                <span style="font-size: 1.125rem; color: #3b82f6;">📅</span>
+              </div>
+              <div>
+                <div style="font-size: 0.875rem; color: #6b7280;">Date</div>
+                <div style="font-weight: 500;">${formattedDate}</div>
+              </div>
+            </div>
+            
+            <div style="display: flex; align-items: center;">
+              <div style="background-color: #dbeafe; border-radius: 9999px; padding: 0.75rem; margin-right: 1rem;">
+                <span style="font-size: 1.125rem; color: #3b82f6;">🕐</span>
+              </div>
+              <div>
+                <div style="font-size: 0.875rem; color: #6b7280;">Heure de départ</div>
+                <div style="font-weight: 500;">${reservation.trajet.heureDepart}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 2rem;">
+            <h4 style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.125rem; font-weight: 600; color: #1f2937; margin-bottom: 0.75rem;">
+              <span>👤</span>
+              <span>Informations passager</span>
+            </h4>
+            <div style="background-color: #f9fafb; border-radius: 0.75rem; padding: 1rem;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                  <div style="font-size: 0.875rem; color: #6b7280;">Nom & Prénom</div>
+                  <div style="font-weight: 500;">${reservation.client.nom} ${reservation.client.prenom}</div>
+                </div>
+                <div>
+                  <div style="font-size: 0.875rem; color: #6b7280;">Contact</div>
+                  <div style="font-weight: 500;">${reservation.client.email}</div>
+                  <div style="font-weight: 500;">${reservation.client.telephone}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+            <div>
+              <div style="font-size: 0.875rem; color: #6b7280;">Compagnie</div>
+              <div style="font-weight: 500;">${reservation.trajet.compagnie}</div>
+            </div>
+            <div>
+              <div style="font-size: 0.875rem; color: #6b7280;">N° de bus</div>
+              <div style="font-weight: 500;">${reservation.trajet.bus?.numero || 'N/A'}</div>
+            </div>
+            <div>
+              <div style="font-size: 0.875rem; color: #6b7280;">Places</div>
+              <div style="font-weight: 500;">${reservation.placesReservees} place(s)</div>
+            </div>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div style="font-size: 1.125rem; font-weight: 500;">Total</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: #3b82f6;">
+              ${(reservation.trajet.prix * reservation.placesReservees).toLocaleString('fr-FR')} FCFA
+            </div>
+          </div>
+          
+          <div style="border-top: 2px dashed #e5e7eb; position: relative; margin: 2rem -2rem 0 -2rem;"></div>
+          
+          <div style="text-align: center; margin-top: 2rem; font-size: 0.875rem; color: #6b7280;">
+            <p>Présentez ce ticket à l'embarquement</p>
+            <p style="font-weight: 500; margin-top: 0.25rem;">MyBus vous souhaite un excellent voyage</p>
+          </div>
+        </div>
+      </div>
+    `;
     
-    // Générer le PDF
-    const canvas = await html2canvas(ticketRef.current, {
+    // Générer le PDF à partir de ce div
+    const element = pdfContainer.firstChild;
+    const canvas = await html2canvas(element, {
       scale: 2,
       logging: false,
       useCORS: true,
@@ -71,11 +178,8 @@ export default function ConfirmationPage() {
     pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
     pdf.save(`MyBus-Ticket-${reservationId}.pdf`);
     
-    // Restaurer les classes originales
-    elementsWithGradients.forEach(el => {
-      el.className = el.getAttribute('data-original-class');
-      el.removeAttribute('data-original-class');
-    });
+    // Nettoyer
+    document.body.removeChild(pdfContainer);
   } catch (err) {
     console.error('Error generating PDF:', err);
   } finally {
