@@ -40,11 +40,34 @@ export default function ConfirmationPage() {
   setDownloading(true);
   
   try {
-    // Utiliser dom-to-image au lieu de html2canvas
-    const dataUrl = await domtoimage.toPng(ticketRef.current, {
-      quality: 0.95,
-      bgcolor: '#fff'
+    // Créer un conteneur temporaire avec largeur fixe
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.left = '-10000px';
+    tempContainer.style.top = '0';
+    tempContainer.style.width = '800px'; // Largeur fixe
+    tempContainer.style.background = 'white';
+    document.body.appendChild(tempContainer);
+    
+    // Cloner le ticket dans ce conteneur
+    const ticketClone = ticketRef.current.cloneNode(true);
+    ticketClone.style.width = '100%';
+    ticketClone.style.boxShadow = 'none';
+    ticketClone.style.margin = '0';
+    ticketClone.style.transform = 'none';
+    tempContainer.appendChild(ticketClone);
+    
+    // Attendre que le DOM soit mis à jour
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Capturer l'élément cloné
+    const dataUrl = await domtoimage.toPng(ticketClone, {
+      quality: 1.0,
+      bgcolor: '#ffffff'
     });
+    
+    // Nettoyer
+    document.body.removeChild(tempContainer);
     
     // Créer le PDF
     const pdf = new jsPDF({
@@ -53,11 +76,37 @@ export default function ConfirmationPage() {
       format: 'a4'
     });
     
-    const imgWidth = 210;
-    const imgProps = pdf.getImageProperties(dataUrl);
+    const imgWidth = 210; // Largeur A4 en mm
+    
+    // Obtenir les dimensions de l'image
+    const imgProps = await new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve({
+        width: img.width,
+        height: img.height
+      });
+      img.src = dataUrl;
+    });
+    
     const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
     
-    pdf.addImage(dataUrl, 'PNG', 0, 0, imgWidth, imgHeight);
+    // Vérifier si la hauteur dépasse la page A4
+    if (imgHeight > 297) { // 297mm = hauteur A4
+      const scaleFactor = 297 / imgHeight * 0.95; // 95% de la hauteur
+      const adjustedWidth = imgWidth * scaleFactor;
+      const adjustedHeight = imgHeight * scaleFactor;
+      
+      // Centrer horizontalement
+      const xOffset = (imgWidth - adjustedWidth) / 2;
+      
+      pdf.addImage(dataUrl, 'PNG', xOffset, 5, adjustedWidth, adjustedHeight);
+    } else {
+      // Centrer verticalement
+      const yOffset = (297 - imgHeight) / 2;
+      
+      pdf.addImage(dataUrl, 'PNG', 0, yOffset, imgWidth, imgHeight);
+    }
+    
     pdf.save(`MyBus-Ticket-${reservationId}.pdf`);
   } catch (err) {
     console.error('Error generating PDF:', err);
@@ -65,6 +114,7 @@ export default function ConfirmationPage() {
     setDownloading(false);
   }
 };
+
 
   if (loading) {
     return (
