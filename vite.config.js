@@ -12,7 +12,7 @@ export default defineConfig({
       includeAssets: ['myicon.jpg', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
         name: 'Gestion Bus Mali',
-        short_name: 'BusMali',
+        short_name: 'Mybus',
         description: 'Application de gestion de bus au Mali',
         theme_color: '#0f172a', // bleu foncé ou couleur de ton branding
         background_color: '#ffffff',
