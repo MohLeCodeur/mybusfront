@@ -3,8 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { FiCheck, FiDownload, FiCalendar, FiClock, FiMapPin, FiUser, FiLoader } from 'react-icons/fi';
 import { FaTicketAlt, FaBus } from 'react-icons/fa';
-import domtoimage from 'dom-to-image';
 import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -33,30 +33,56 @@ export default function ConfirmationPage() {
     fetchReservation();
   }, [reservationId]);
 
-  const handleDownloadTicket = async () => {
-  if (!ticketRef.current) return;
-  
+ const handleDownloadTicket = async () => {
   setDownloading(true);
   
   try {
-    // Utiliser dom-to-image au lieu de html2canvas
-    const dataUrl = await domtoimage.toPng(ticketRef.current, {
-      quality: 0.95,
-      bgcolor: '#fff'
-    });
+    const pdf = new jsPDF();
     
-    // Créer le PDF
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
+    // Définir les styles de base
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(24);
+    pdf.setTextColor(59, 130, 246); // Bleu
     
-    const imgWidth = 210;
-    const imgProps = pdf.getImageProperties(dataUrl);
-    const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+    // Titre
+    pdf.text('MyBus - Billet de voyage', 105, 20, { align: 'center' });
     
-    pdf.addImage(dataUrl, 'PNG', 0, 0, imgWidth, imgHeight);
+    // Informations sur la réservation
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(12);
+    pdf.setTextColor(0, 0, 0);
+    
+    pdf.text(`Réservation: ${reservationId}`, 20, 40);
+    pdf.text(`De: ${reservation.trajet.villeDepart} - À: ${reservation.trajet.villeArrivee}`, 20, 50);
+    pdf.text(`Date: ${formattedDate}`, 20, 60);
+    pdf.text(`Heure de départ: ${reservation.trajet.heureDepart}`, 20, 70);
+    
+    // Informations passager
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Informations passager:', 20, 90);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Nom & Prénom: ${reservation.client.nom} ${reservation.client.prenom}`, 20, 100);
+    pdf.text(`Contact: ${reservation.client.email}`, 20, 110);
+    pdf.text(`Téléphone: ${reservation.client.telephone}`, 20, 120);
+    
+    // Autres détails
+    pdf.text(`Compagnie: ${reservation.trajet.compagnie}`, 20, 140);
+    pdf.text(`N° de bus: ${reservation.trajet.bus?.numero || 'N/A'}`, 20, 150);
+    pdf.text(`Places: ${reservation.placesReservees} place(s)`, 20, 160);
+    
+    // Total
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(16);
+    pdf.setTextColor(59, 130, 246); // Bleu
+    pdf.text(`Total: ${(reservation.trajet.prix * reservation.placesReservees).toLocaleString('fr-FR')} FCFA`, 20, 180);
+    
+    // Pied de page
+    pdf.setFont('helvetica', 'italic');
+    pdf.setFontSize(12);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text('Présentez ce ticket labas', 105, 230, { align: 'center' });
+    pdf.text('MyBus vous souhaite un excellent voyage', 105, 240, { align: 'center' });
+    
     pdf.save(`MyBus-Ticket-${reservationId}.pdf`);
   } catch (err) {
     console.error('Error generating PDF:', err);
