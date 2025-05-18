@@ -1,108 +1,60 @@
-import React from 'react';
-import { 
-  Card, 
-  CardContent, 
-  Typography, 
-  Button, 
-  Stack, 
-  Divider, 
-  Chip,
-  Box
-} from '@mui/material';
-import { 
-  AccessTime, 
-  Place, 
-  Event, 
-  ConfirmationNumber,
-  DirectionsBus
-} from '@mui/icons-material';
+/* src/components/TrajetCard.jsx */
+import { FiMapPin, FiClock, FiCalendar, FiPackage, FiTruck } from 'react-icons/fi'
 
-const TrajetCard = ({ trajet, onReserve }) => {
-  const formatDate = (dateString) => {
-    const options = { weekday: 'long', day: 'numeric', month: 'long' };
-    return new Date(dateString).toLocaleDateString('fr-FR', options);
-  };
+export default function TrajetCard ({ trajet, onReserve }) {
+  const dateStr = new Date(trajet.dateDepart).toLocaleDateString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long'
+  })
 
   return (
-    <Card sx={{ 
-      borderLeft: '4px solid',
-      borderColor: 'primary.main',
-      transition: 'all 0.3s ease',
-      '&:hover': {
-        transform: 'translateY(-3px)',
-        boxShadow: 3
-      }
-    }}>
-      <CardContent>
-        <Stack spacing={2}>
-          {/* Ligne 1 : Villes et Prix */}
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-              <Place color="primary" sx={{ verticalAlign: 'middle', mr: 1 }} />
+    <div className="group bg-white rounded-3xl shadow-xl p-8ring-1 ring-gray-100 hover:ring-pink-400/50 hover:shadow-pink-300/30 transition">
+      <div className="p-6 space-y-4">
+        {/* Ville + compagnie + prix */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <div>
+            <h3 className="text-lg font-semibold flex items-center gap-1 text-gray-800">
+              <FiMapPin className="text-pink-500" />
               {trajet.villeDepart} → {trajet.villeArrivee}
-            </Typography>
-            
-            <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold' }}>
-              {trajet.prix?.toLocaleString('fr-FR') || '--'} FCFA
-            </Typography>
-          </Box>
+            </h3>
+            <p className="flex items-center gap-1 text-sm text-gray-500">
+              <FiTruck /> {trajet.compagnie}
+            </p>
+          </div>
 
-          <Divider />
+          <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-blue-600 bg-clip-text text-transparent">
+            {trajet.prix.toLocaleString('fr-FR')} FCFA
+          </span>
+        </div>
 
-          {/* Ligne 2 : Détails */}
-          <Box sx={{ 
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 3,
-            alignItems: 'center'
-          }}>
-            <Typography>
-              <Event color="action" sx={{ verticalAlign: 'middle', mr: 1 }} />
-              {formatDate(trajet.dateDepart)}
-            </Typography>
-            
-            <Typography>
-              <AccessTime color="action" sx={{ verticalAlign: 'middle', mr: 1 }} />
-              Départ: {trajet.heureDepart}
-            </Typography>
-            
-            <Typography>
-              <DirectionsBus color="action" sx={{ verticalAlign: 'middle', mr: 1 }} />
-              Bus: {trajet.bus?.numero}
-            </Typography>
-            
-            <Chip 
-              icon={<ConfirmationNumber />}
-              label={`${trajet.placesDisponibles} places restantes`}
-              color={trajet.placesDisponibles < 10 ? 'warning' : 'success'}
-              variant="outlined"
-            />
-          </Box>
+        {/* Détails */}
+        <div className="flex flex-wrap gap-6 text-sm text-gray-600">
+          <div className="flex items-center gap-1"><FiCalendar /> {dateStr}</div>
+          <div className="flex items-center gap-1"><FiClock /> {trajet.heureDepart}</div>
+          <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+            trajet.placesDisponibles < 10
+              ? 'bg-amber-100 text-amber-600'
+              : 'bg-emerald-100 text-emerald-600'
+          }`}>
+            {trajet.placesDisponibles} places
+          </div>
+        </div>
 
-          {/* Bouton de réservation */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={() => onReserve()}
-              disabled={trajet.placesDisponibles <= 0}
-              sx={{ 
-                px: 4,
-                fontWeight: 'bold',
-                fontSize: '1rem'
-              }}
-            >
-              {trajet.placesDisponibles > 0 ? 'Réserver maintenant' : 'Complet'}
-            </Button>
-          </Box>
-        </Stack>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default TrajetCard;
+        {/* CTA */}
+        <div className="pt-4 flex justify-end">
+          <button
+            onClick={onReserve}
+            disabled={trajet.placesDisponibles <= 0}
+            className={`px-6 py-2 rounded-full font-semibold text-white transition
+              ${
+                trajet.placesDisponibles > 0
+                  ? 'bg-gradient-to-r from-pink-500 to-blue-600 hover:brightness-110 active:scale-95'
+                  : 'bg-gray-300 cursor-not-allowed'
+              }`}
+          >
+            Réserver
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
