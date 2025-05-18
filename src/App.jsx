@@ -1,4 +1,3 @@
-// App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { FiSmartphone, FiMapPin } from 'react-icons/fi'
 import { FaBoxOpen } from 'react-icons/fa'
@@ -15,20 +14,14 @@ import Footer from './components/Footer'
 import SearchPage from './routes/SearchPage'
 import ReservationPage from './routes/ReservationPage'
 import ConfirmationPage from './routes/ConfirmationPage'
+import PaymentFailedPage from './routes/PaymentFailedPage' // 👉 Import ajouté
 
-/* ---------------------------------------------------------------------------
-   HOME
---------------------------------------------------------------------------- */
 function Home() {
   return (
     <div className="overflow-hidden bg-gray-50">
-      {/* NAVBAR */}
       <Navbar />
-
-      {/* HERO */}
       <Hero />
 
-      {/* FEATURES */}
       <section className="py-24 px-4 max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-playfair font-bold text-primary mb-4">
@@ -46,14 +39,12 @@ function Home() {
             description="Payez et recevez votre billet en quelques secondes grâce à l’intégration Orange Money."
             color="from-orange-500 to-amber-600"
           />
-
           <FeatureCard
             icon={<FaBoxOpen size={36} />}
             title="Suivi du statut des colis"
             description="Expédiez vos paquets : suivez leur état (en chargement, en route, livré) directement depuis l’appli."
             color="from-purple-600 to-fuchsia-600"
           />
-
           <FeatureCard
             icon={<FiMapPin size={36} />}
             title="Suivi temps réel"
@@ -63,7 +54,6 @@ function Home() {
         </div>
       </section>
 
-      {/* DESTINATIONS */}
       <section className="py-24 bg-gradient-to-br from-white to-indigo-50">
         <div className="px-4 max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -78,7 +68,6 @@ function Home() {
         </div>
       </section>
 
-      {/* LIVE MAP */}
       <section className="py-24 px-4 max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-playfair font-bold text-primary mb-4">
@@ -91,15 +80,11 @@ function Home() {
         <LiveMap />
       </section>
 
-      {/* FOOTER */}
       <Footer />
     </div>
   )
 }
 
-/* ---------------------------------------------------------------------------
-   APP ROOT
---------------------------------------------------------------------------- */
 export default function App() {
   return (
     <Router>
@@ -108,6 +93,7 @@ export default function App() {
         <Route path="/search" element={<SearchPage />} />
         <Route path="/reservation/:id" element={<ReservationPage />} />
         <Route path="/confirmation/:id" element={<ConfirmationPage />} />
+        <Route path="/payment-failed" element={<PaymentFailedPage />} /> {/* ✅ Route ajoutée */}
       </Routes>
     </Router>
   )
