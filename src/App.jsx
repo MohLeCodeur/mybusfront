@@ -15,6 +15,8 @@ import SearchPage from './routes/SearchPage'
 import ReservationPage from './routes/ReservationPage'
 import ConfirmationPage from './routes/ConfirmationPage'
 import PaymentFailedPage from './routes/PaymentFailedPage' // 👉 Import ajouté
+import LoginPage from './pages/LoginPage'
+
 
 function Home() {
   return (
@@ -94,6 +96,8 @@ export default function App() {
         <Route path="/reservation/:id" element={<ReservationPage />} />
         <Route path="/confirmation/:id" element={<ConfirmationPage />} />
         <Route path="/payment-failed" element={<PaymentFailedPage />} /> {/* ✅ Route ajoutée */}
+        <Route path="/login" element={<LoginPage />} />
+
       </Routes>
     </Router>
   )
