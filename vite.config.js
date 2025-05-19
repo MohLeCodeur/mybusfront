@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['myicon.jpg', 'robots.txt', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
         name: 'Gestion Bus Mali',
         short_name: 'Mybus',
