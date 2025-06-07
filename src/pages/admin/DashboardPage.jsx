@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { FaBus } from 'react-icons/fa';
 import { FiUsers, FiBox, FiTrendingUp } from 'react-icons/fi';
-import api from '../../api';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import api from '@/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const StatCard = ({ title, value, icon, color }) => (
   <Card>
