@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { FaBus } from 'react-icons/fa';
 import { FiUsers, FiBox, FiTrendingUp } from 'react-icons/fi';
 import api from '@/api';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card.jsx';
 
 const StatCard = ({ title, value, icon, color }) => (
   <Card>
