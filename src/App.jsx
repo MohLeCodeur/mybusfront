@@ -1,104 +1,110 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { FiSmartphone, FiMapPin } from 'react-icons/fi'
-import { FaBoxOpen } from 'react-icons/fa'
+// src/App.jsx
+import React from 'react';
+// LIGNE CORRIGÉE : Ajout de 'Link' à l'import
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 
-/* --- composants globaux --- */
-import Navbar from './components/Navbar'
-import Hero from './components/Hero'
-import FeatureCard from './components/FeatureCard'
-import DestinationCarousel from './components/DestinationCarousel'
-import LiveMap from './components/LiveMap'
-import Footer from './components/Footer'
+// Layouts
+import PublicLayout from './layouts/PublicLayout';
+import AdminLayout from './layouts/AdminLayout';
 
-/* --- pages spécifiques --- */
-import SearchPage from './routes/SearchPage'
-import ReservationPage from './routes/ReservationPage'
-import ConfirmationPage from './routes/ConfirmationPage'
-import PaymentFailedPage from './routes/PaymentFailedPage' // 👉 Import ajouté
-import LoginPage from './pages/LoginPage'
+// Components
+import ProtectedRoute from './components/ProtectedRoute';
 
+// --- Pages Publiques ---
+import HomePage from './pages/public/HomePage';
+import SearchPage from './pages/public/SearchPage';
+import ReservationPage from './pages/public/ReservationPage';
+import ConfirmationPage from './pages/public/ConfirmationPage';
+import PaymentFailedPage from './pages/public/PaymentFailedPage';
+import PublicColisTrackingPage from './pages/public/PublicColisTrackingPage';
 
-function Home() {
+// --- Pages d'Authentification ---
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+
+// --- Pages Admin ---
+import DashboardPage from './pages/admin/DashboardPage';
+import BusListPage from './pages/admin/BusListPage';
+import BusFormPage from './pages/admin/BusFormPage';
+import ChauffeurListPage from './pages/admin/ChauffeurListPage';
+import ChauffeurFormPage from './pages/admin/ChauffeurFormPage';
+import TrajetListPage from './pages/admin/TrajetListPage';
+import TrajetFormPage from './pages/admin/TrajetFormPage';
+import ReservationListPage from './pages/admin/ReservationListPage';
+import ColisDashboardPage from './pages/admin/ColisDashboardPage';
+import ColisFormPage from './pages/admin/ColisFormPage';
+import StatsPage from './pages/admin/StatsPage';
+
+function App() {
   return (
-    <div className="overflow-hidden bg-gray-50">
-      <Navbar />
-      <Hero />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* --- Section Publique --- */}
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/reservation/:id" element={<ReservationPage />} />
+            <Route path="/confirmation/:id" element={<ConfirmationPage />} />
+            <Route path="/payment-failed" element={<PaymentFailedPage />} />
+            <Route path="/track-colis" element={<PublicColisTrackingPage />} />
+            
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+          </Route>
 
-      <section className="py-24 px-4 max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-playfair font-bold text-primary mb-4">
-            Pourquoi choisir MyBus&nbsp;?
-          </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Profitez de la réservation Orange&nbsp;Money, du suivi de colis et de notre géolocalisation en temps réel
-          </p>
-        </div>
+          {/* --- Section Admin Protégée --- */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPage />} />
+            
+            <Route path="bus" element={<BusListPage />} />
+            <Route path="bus/new" element={<BusFormPage />} />
+            <Route path="bus/:id/edit" element={<BusFormPage />} />
+            
+            <Route path="chauffeurs" element={<ChauffeurListPage />} />
+            <Route path="chauffeurs/new" element={<ChauffeurFormPage />} />
+            <Route path="chauffeurs/:id/edit" element={<ChauffeurFormPage />} />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <FeatureCard
-            icon={<FiSmartphone size={36} />}
-            title="Réservation Orange Money"
-            description="Payez et recevez votre billet en quelques secondes grâce à l’intégration Orange Money."
-            color="from-orange-500 to-amber-600"
-          />
-          <FeatureCard
-            icon={<FaBoxOpen size={36} />}
-            title="Suivi du statut des colis"
-            description="Expédiez vos paquets : suivez leur état (en chargement, en route, livré) directement depuis l’appli."
-            color="from-purple-600 to-fuchsia-600"
-          />
-          <FeatureCard
-            icon={<FiMapPin size={36} />}
-            title="Suivi temps réel"
-            description="Géolocalisez votre bus et obtenez l’heure d’arrivée estimée, minute par minute."
-            color="from-blue-500 to-indigo-600"
-          />
-        </div>
-      </section>
+            <Route path="trajets" element={<TrajetListPage />} />
+            <Route path="trajets/new" element={<TrajetFormPage />} />
+            <Route path="trajets/:id/edit" element={<TrajetFormPage />} />
 
-      <section className="py-24 bg-gradient-to-br from-white to-indigo-50">
-        <div className="px-4 max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-playfair font-bold text-primary mb-4">
-              Nos destinations populaires
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Parcourez les principales villes desservies par MyBus
-            </p>
-          </div>
-          <DestinationCarousel />
-        </div>
-      </section>
+            <Route path="reservations" element={<ReservationListPage />} />
 
-      <section className="py-24 px-4 max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-playfair font-bold text-primary mb-4">
-            Suivi en temps réel
-          </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Suivez votre bus ou vos colis sur notre carte interactive
-          </p>
-        </div>
-        <LiveMap />
-      </section>
+            <Route path="colis" element={<ColisDashboardPage />} />
+            <Route path="colis/new" element={<ColisFormPage />} />
+            <Route path="colis/:id/edit" element={<ColisFormPage />} />
 
-      <Footer />
-    </div>
-  )
+            <Route path="stats" element={<StatsPage />} />
+          </Route>
+
+          {/* Page non trouvée */}
+          <Route path="*" element={
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <h1 className="text-4xl font-bold">404 - Page Non Trouvée</h1>
+                    <p className="text-gray-500 mt-2">La page que vous cherchez n'existe pas.</p>
+                    {/* C'est ici que Link était utilisé sans être importé */}
+                    <Link to="/" className="text-white bg-blue-600 hover:bg-blue-700 font-semibold py-2 px-4 rounded-lg mt-6 inline-block">
+                        Retour à l'accueil
+                    </Link>
+                </div>
+            </div>
+          } />
+
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
 }
 
-export default function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/search" element={<SearchPage />} />
-        <Route path="/reservation/:id" element={<ReservationPage />} />
-        <Route path="/confirmation/:id" element={<ConfirmationPage />} />
-        <Route path="/payment-failed" element={<PaymentFailedPage />} /> {/* ✅ Route ajoutée */}
-        <Route path="/login" element={<LoginPage />} />
-
-      </Routes>
-    </Router>
-  )
-}
+export default App;
