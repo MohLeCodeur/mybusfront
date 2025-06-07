@@ -4,7 +4,7 @@ import axios from 'axios';
 // ====================================================================
 // CORRECTION : On force l'URL de base du backend
 // ====================================================================
-const baseURL = 'http://localhost:5000/api';
+const baseURL = 'https://mybusback.onrender.com/api';
 
 const api = axios.create({
   baseURL: baseURL,
