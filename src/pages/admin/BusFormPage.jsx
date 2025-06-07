@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '@/api';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card.jsx';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button.jsx';
 import { FiSave, FiLoader } from 'react-icons/fi';
 
 const BusFormPage = () => {

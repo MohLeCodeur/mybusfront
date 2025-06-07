@@ -1,7 +1,7 @@
 // src/pages/admin/ReservationListPage.jsx
 import React, { useState, useEffect } from 'react';
 import api from '@/api';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card.jsx';
 import { FiLoader } from 'react-icons/fi';
 
 const ReservationListPage = () => {
