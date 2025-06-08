@@ -1,9 +1,9 @@
 // src/pages/admin/TrajetFormPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '@/api';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card.jsx';
-import { Button } from '@/components/ui/Button.jsx';
+import api from '../../api';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card.jsx';
+import { Button } from '../../components/ui/Button.jsx';
 import { FiSave, FiLoader } from 'react-icons/fi';
 
 const TrajetFormPage = () => {
@@ -14,9 +14,9 @@ const TrajetFormPage = () => {
     const [formData, setFormData] = useState({
         villeDepart: '', villeArrivee: '', compagnie: '',
         dateDepart: '', heureDepart: '', prix: '',
-        placesDisponibles: '', bus: ''
+        placesDisponibles: '', bus: '' // La valeur initiale est ''
     });
-    const [buses, setBuses] = useState([]); // Initialisé comme un tableau vide
+    const [buses, setBuses] = useState([]);
     const [loading, setLoading] = useState(false);
     const [formLoading, setFormLoading] = useState(true);
     const [error, setError] = useState('');
@@ -24,12 +24,12 @@ const TrajetFormPage = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                // --- CORRECTION CI-DESSOUS ---
                 const busRes = await api.get('/admin/bus');
-                // On extrait le tableau 'buses' de l'objet de réponse
-                setBuses(busRes.data.buses || []); 
-                // -----------------------------
-
+                if (Array.isArray(busRes.data)) {
+                    setBuses(busRes.data);
+                } else {
+                    setBuses([]);
+                }
                 if (isEditMode) {
                     const trajetRes = await api.get(`/public/trajets/${id}`);
                     const trajetData = {
@@ -40,7 +40,7 @@ const TrajetFormPage = () => {
                     setFormData(trajetData);
                 }
             } catch (err) {
-                setError("Erreur de chargement des données.");
+                setError("Erreur de chargement.");
             } finally {
                 setFormLoading(false);
             }
@@ -57,9 +57,21 @@ const TrajetFormPage = () => {
         setLoading(true);
         setError('');
         try {
+            // --- CORRECTION CI-DESSOUS ---
+            // On crée une copie du payload à envoyer
+            const payload = { ...formData };
+            
+            // Si formData.bus est une chaîne vide (ce qui arrive si on sélectionne "Aucun bus"),
+            // on la remplace par `null` avant de l'envoyer au backend.
+            if (payload.bus === '') {
+                payload.bus = null;
+            }
+            // -----------------------------
+
             const apiCall = isEditMode 
-                ? api.put(`/admin/trajets/${id}`, formData) 
-                : api.post('/admin/trajets', formData);
+                ? api.put(`/admin/trajets/${id}`, payload) // On envoie le payload corrigé
+                : api.post('/admin/trajets', payload); // On envoie le payload corrigé
+            
             await apiCall;
             navigate('/admin/trajets');
         } catch (err) {
@@ -89,7 +101,7 @@ const TrajetFormPage = () => {
                         <input type="number" name="prix" value={formData.prix} onChange={handleChange} placeholder="Prix (FCFA)" required className="border p-2 rounded-md" />
                         <input type="number" name="placesDisponibles" value={formData.placesDisponibles} onChange={handleChange} placeholder="Places disponibles" required className="border p-2 rounded-md" />
                     </div>
-                    <select name="bus" value={formData.bus} onChange={handleChange} className="w-full border p-2 rounded-md">
+                    <select name="bus" value={formData.bus} onChange={handleChange} className="w-full border p-2 rounded-md bg-gray-50">
                         <option value="">— Associer un bus (optionnel) —</option>
                         {buses.map(b => <option key={b._id} value={b._id}>{b.numero} ({b.capacite} places)</option>)}
                     </select>
