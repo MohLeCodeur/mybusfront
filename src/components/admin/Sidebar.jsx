@@ -1,7 +1,7 @@
 // src/components/admin/Sidebar.jsx
 import React, { useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { FiGrid, FiUsers, FiMap, FiPackage, FiCreditCard, FiLogOut } from 'react-icons/fi';
+import { FiGrid, FiUsers, FiMap, FiPackage, FiCreditCard, FiLogOut, FiBarChart2 } from 'react-icons/fi';
 import { FaBus } from 'react-icons/fa';
 import AuthContext from '../../context/AuthContext';
 
@@ -13,7 +13,7 @@ const navLinks = [
   { to: '/admin/trajets', icon: <FiMap />, label: 'Trajets' },
   { to: '/admin/reservations', icon: <FiPackage />, label: 'Réservations' },
   { to: '/admin/colis', icon: <FiPackage />, label: 'Colis' },
-  { to: '/admin/paiements', icon: <FiCreditCard />, label: 'Paiements & Stats' },
+  { to: '/admin/stats', icon: <FiBarChart2 />, label: 'Statistiques' },
 ];
 
 // Composant interne réutilisable pour chaque lien de navigation
