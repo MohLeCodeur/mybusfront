@@ -4,6 +4,7 @@ import { FiLoader, FiSearch } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import TrajetCard from '../../components/public/TrajetCard.jsx';
+import { Button } from '../../components/ui/Button.jsx'; // <-- LIGNE À AJOUTER
 
 const LIMIT = 15;
 
@@ -12,18 +13,16 @@ const SearchPage = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [trajets, setTrajets] = useState([]);
-  const [allVilles, setAllVilles] = useState([]); // Pour remplir les <select>
+  const [allVilles, setAllVilles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // On utilise useEffect pour lancer la recherche au chargement et à chaque changement de filtre ou de page.
   useEffect(() => {
-    console.log("Lancement de la recherche de trajets avec les filtres :", filters, "et la page :", page); // LOG DE DÉBOGAGE
+    console.log("Lancement de la recherche de trajets avec les filtres :", filters, "et la page :", page);
     setLoading(true);
     setError(null);
     
-    // Préparation des paramètres pour l'URL
     const params = {
       villeDepart: filters.departure || undefined,
       villeArrivee: filters.arrival || undefined,
@@ -34,35 +33,30 @@ const SearchPage = () => {
 
     api.get('/public/trajets/search', { params })
       .then(({ data }) => {
-        console.log("Données reçues du backend :", data); // LOG DE DÉBOGAGE
+        console.log("Données reçues du backend :", data);
         setTrajets(data.docs || []);
         setTotalPages(data.pages || 1);
 
-        // Au premier chargement, on peuple la liste des villes pour les filtres
         if (page === 1) {
             const villes = new Set();
             (data.docs || []).forEach(t => {
                 if(t.villeDepart) villes.add(t.villeDepart);
                 if(t.villeArrivee) villes.add(t.villeArrivee);
             });
-            // Si la liste des villes est vide, on peut tenter un appel pour toutes les avoir
-            if (villes.size === 0) {
-                // Optionnel: faire un autre appel pour avoir toutes les villes possibles
-            }
             setAllVilles(Array.from(villes).sort());
         }
       })
       .catch(err => {
-        console.error("Erreur API dans SearchPage:", err); // LOG DE DÉBOGAGE
+        console.error("Erreur API dans SearchPage:", err);
         setError(err.response?.data?.message || "Une erreur est survenue lors de la recherche.")
       })
       .finally(() => setLoading(false));
 
-  }, [filters, page]); // Le useEffect se redéclenche si 'filters' ou 'page' changent
+  }, [filters, page]);
 
   const handleFilterChange = (e) => {
     setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    setPage(1); // Important: revenir à la première page lors d'un changement de filtre
+    setPage(1);
   };
 
   const handleReset = () => {
