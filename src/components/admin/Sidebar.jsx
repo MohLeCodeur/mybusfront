@@ -44,7 +44,7 @@ const Sidebar = () => {
     <aside className="w-64 bg-white h-screen shadow-lg flex flex-col sticky top-0">
       <div className="p-6 border-b">
         <NavLink to="/" className="flex items-center gap-2">
-            <img src="/assets/mybus.webp" alt="MyBus Logo" className="h-14 w-auto" />
+            <img src="/assets/mybus.webp" alt="MyBus Logo" className="h-15 w-auto" />
         </NavLink>
       </div>
       <nav className="flex-1 px-4 py-6 space-y-2">

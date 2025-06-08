@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { FiPlus, FiEdit, FiLoader } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiLoader } from 'react-icons/fi';
 
 const ColisDashboardPage = () => {
   const [colisList, setColisList] = useState([]);
@@ -12,7 +12,9 @@ const ColisDashboardPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
+  // Fonction pour charger ou rafraîchir les données
+  const fetchColis = () => {
+    setLoading(true);
     api.get('/admin/colis')
       .then(res => {
         if (Array.isArray(res.data)) {
@@ -23,7 +25,26 @@ const ColisDashboardPage = () => {
       })
       .catch(err => setError(err.response?.data?.message || 'Erreur serveur'))
       .finally(() => setLoading(false));
+  };
+
+  // Appel initial
+  useEffect(() => {
+    fetchColis();
   }, []);
+
+  // Fonction pour gérer la suppression d'un colis
+  const handleDelete = async (id, codeSuivi) => {
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer le colis ${codeSuivi} ?`)) {
+      try {
+        await api.delete(`/admin/colis/${id}`);
+        // Rafraîchir la liste après suppression
+        fetchColis();
+      } catch (err) {
+        alert("Erreur: " + (err.response?.data?.message || "Impossible de supprimer le colis."));
+        console.error(err);
+      }
+    }
+  };
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -51,7 +72,7 @@ const ColisDashboardPage = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left">Code Suivi</th>
-                  <th className="px-6 py-3 text-left">Expéditeur → Destinataire</th>
+                  <th className="px-6 py-3 text-left">Exp. → Dest.</th>
                   <th className="px-6 py-3 text-left">Prix</th>
                   <th className="px-6 py-3 text-left">Date</th>
                   <th className="px-6 py-3 text-left">Statut</th>
@@ -62,22 +83,21 @@ const ColisDashboardPage = () => {
                 {colisList.length > 0 ? colisList.map(c => (
                   <tr key={c._id}>
                     <td className="px-6 py-4 font-mono text-sm">{c.code_suivi}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{c.expediteur_nom} → {c.destinataire_nom}</td>
-                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-sm">
-                      {c.prix ? c.prix.toLocaleString('fr-FR') + ' FCFA' : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(c.date_enregistrement).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(c.statut)}`}>
-                        {c.statut}
-                      </span>
+                    <td className="px-6 py-4 text-sm">{c.expediteur_nom} → {c.destinataire_nom}</td>
+                    <td className="px-6 py-4 font-semibold text-sm">{c.prix ? c.prix.toLocaleString('fr-FR') + ' FCFA' : 'N/A'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{new Date(c.date_enregistrement).toLocaleDateString('fr-FR')}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(c.statut)}`}>{c.statut}</span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Button size="sm" variant="outline" onClick={() => navigate(`/admin/colis/${c._id}/edit`)}>
-                        <FiEdit className="mr-1" /> Gérer
-                      </Button>
+                      <div className="flex justify-end items-center gap-2">
+                        <Button size="sm" variant="outline" onClick={() => navigate(`/admin/colis/${c._id}/edit`)}>
+                          <FiEdit className="mr-1 h-3 w-3" /> Gérer
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDelete(c._id, c.code_suivi)}>
+                          <FiTrash2 className="mr-1 h-3 w-3"/> Supprimer
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 )) : (
