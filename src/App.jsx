@@ -32,6 +32,7 @@ import ChauffeurFormPage from './pages/admin/ChauffeurFormPage';
 import TrajetListPage from './pages/admin/TrajetListPage';
 import TrajetFormPage from './pages/admin/TrajetFormPage';
 import ReservationListPage from './pages/admin/ReservationListPage';
+import ReservationFormPage from './pages/admin/ReservationFormPage';
 import ColisDashboardPage from './pages/admin/ColisDashboardPage';
 import ColisFormPage from './pages/admin/ColisFormPage';
 import StatsPage from './pages/admin/StatsPage';
@@ -79,7 +80,7 @@ function App() {
             <Route path="trajets/:id/edit" element={<TrajetFormPage />} />
 
             <Route path="reservations" element={<ReservationListPage />} />
-
+            <Route path="reservations/:id/edit" element={<ReservationFormPage />} />
             <Route path="colis" element={<ColisDashboardPage />} />
             <Route path="colis/new" element={<ColisFormPage />} />
             <Route path="colis/:id/edit" element={<ColisFormPage />} />
