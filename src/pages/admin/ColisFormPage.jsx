@@ -48,14 +48,28 @@ const ColisFormPage = () => {
         setLoading(true);
         setError('');
         try {
-            const apiCall = isEditMode ? api.put(`/admin/colis/${id}`, formData) : api.post('/admin/colis', formData);
-            await apiCall;
-            navigate('/admin/colis');
+            if (isEditMode) {
+                // --- Logique améliorée ---
+                const { data: updatedColis } = await api.put(`/admin/colis/${id}`, formData);
+                
+                // Mettre à jour l'affichage du prix avec la nouvelle valeur renvoyée par le backend
+                setDisplayData(prev => ({ ...prev, prix: updatedColis.prix }));
+
+                // Donner un court instant à l'admin pour voir le prix mis à jour
+                setTimeout(() => {
+                    navigate('/admin/colis');
+                }, 1000); // Redirige après 1 seconde
+
+            } else {
+                // La logique de création ne change pas
+                await api.post('/admin/colis', formData);
+                navigate('/admin/colis');
+            }
         } catch (err) {
             setError(err.response?.data?.message || 'Une erreur est survenue.');
-        } finally {
-            setLoading(false);
+            setLoading(false); // On arrête le loader en cas d'erreur
         }
+        // Pas de setLoading(false) ici si la redirection est immédiate
     };
     
     if(formLoading) return <div>Chargement du formulaire...</div>;
