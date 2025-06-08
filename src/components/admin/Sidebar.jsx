@@ -13,7 +13,7 @@ const navLinks = [
   { to: '/admin/trajets', icon: <FiMap />, label: 'Trajets' },
   { to: '/admin/reservations', icon: <FiPackage />, label: 'Réservations' },
   { to: '/admin/colis', icon: <FiPackage />, label: 'Colis' },
-  { to: '/admin/stats', icon: <FiBarChart2 />, label: 'Statistiques' },
+  { to: '/admin/paiements', icon: <FiCreditCard />, label: 'Paiements & Stats' },
 ];
 
 // Composant interne réutilisable pour chaque lien de navigation
