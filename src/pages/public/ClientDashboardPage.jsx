@@ -5,17 +5,27 @@ import api from '../../api';
 import AuthContext from '../../context/AuthContext';
 import { FiClock, FiMapPin, FiBox, FiLoader } from 'react-icons/fi';
 
-// Composant pour le compte à rebours
-const Countdown = ({ targetDate }) => {
+// === COMPOSANT COUNTDOWN CORRIGÉ ===
+const Countdown = ({ targetDate, departureTime }) => {
+    
+    // Combine la date du trajet et l'heure de départ pour créer un objet Date complet
+    const targetDateTime = new Date(`${targetDate.split('T')[0]}T${departureTime}:00`);
+
     const calculateTimeLeft = () => {
-        const difference = +new Date(targetDate) - +new Date();
+        // Obtenir le timestamp actuel en UTC
+        const now_utc = new Date().getTime();
+        // Obtenir le timestamp de la date cible en UTC
+        const target_utc = targetDateTime.getTime();
+
+        const difference_utc = target_utc - now_utc;
+
         let timeLeft = {};
-        if (difference > 0) {
+        if (difference_utc > 0) {
             timeLeft = {
-                jours: Math.floor(difference / (1000 * 60 * 60 * 24)),
-                heures: Math.floor((difference / (1000 * 60 * 60)) % 24),
-                minutes: Math.floor((difference / 1000 / 60) % 60),
-                secondes: Math.floor((difference / 1000) % 60)
+                Jours: Math.floor(difference_utc / (1000 * 60 * 60 * 24)),
+                Heures: Math.floor((difference_utc / (1000 * 60 * 60)) % 24),
+                Minutes: Math.floor((difference_utc / 1000 / 60) % 60),
+                Secondes: Math.floor((difference_utc / 1000) % 60)
             };
         }
         return timeLeft;
@@ -30,13 +40,17 @@ const Countdown = ({ targetDate }) => {
         return () => clearTimeout(timer);
     });
 
-    const timerComponents = Object.keys(timeLeft).map(interval => {
-        if (!timeLeft[interval] && interval !== 'jours' && timeLeft.jours === 0) {
-            return null;
+    const timerComponents = Object.entries(timeLeft).map(([interval, value]) => {
+        if (!value && interval !== 'Jours' && timeLeft.Jours === 0) {
+            if (!value && interval !== 'Heures' && timeLeft.Heures === 0) {
+                if (!value && interval !== 'Minutes' && timeLeft.Minutes === 0) {
+                    return null;
+                }
+            }
         }
         return (
             <div key={interval} className="text-center">
-                <span className="text-2xl lg:text-4xl font-bold">{timeLeft[interval]}</span>
+                <span className="text-2xl lg:text-4xl font-bold">{String(value).padStart(2, '0')}</span>
                 <span className="block text-xs uppercase">{interval}</span>
             </div>
         );
@@ -44,14 +58,15 @@ const Countdown = ({ targetDate }) => {
 
     return (
         <div>
-            {Object.keys(timeLeft).length ? (
-                <div className="flex justify-center gap-4">{timerComponents}</div>
+            {Object.keys(timeLeft).length > 0 ? (
+                <div className="flex justify-center gap-4 sm:gap-8">{timerComponents}</div>
             ) : (
-                <span className="text-lg text-green-500">Heure de départ atteinte !</span>
+                <span className="text-lg font-bold text-green-500">Heure de départ atteinte !</span>
             )}
         </div>
     );
 };
+// =====================================
 
 const ClientDashboardPage = () => {
   const { user } = useContext(AuthContext);
@@ -71,12 +86,11 @@ const ClientDashboardPage = () => {
     <div className="max-w-7xl mx-auto py-12 px-4 space-y-12">
       <h1 className="text-4xl font-bold text-gray-800">Bonjour, {user?.prenom} !</h1>
       
-      {/* Widget du prochain voyage */}
       <div className="bg-white rounded-xl shadow-lg p-8">
         <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3"><FiClock/> Mon Prochain Voyage</h2>
         {nextTrip && nextTrip.reservation ? (
             <div>
-                <div className="grid md:grid-cols-3 gap-4 mb-8 text-center">
+                <div className="grid md:grid-cols-3 gap-4 mb-8 text-center border-b pb-6">
                     <div><strong className="block text-gray-500">Trajet</strong>{nextTrip.reservation.trajet.villeDepart} → {nextTrip.reservation.trajet.villeArrivee}</div>
                     <div><strong className="block text-gray-500">Date</strong>{new Date(nextTrip.reservation.trajet.dateDepart).toLocaleDateString('fr-FR')}</div>
                     <div><strong className="block text-gray-500">Heure</strong>{nextTrip.reservation.trajet.heureDepart}</div>
@@ -84,8 +98,12 @@ const ClientDashboardPage = () => {
                 
                 {new Date(nextTrip.reservation.trajet.dateDepart) > new Date() ? (
                     <div className="p-8 bg-blue-50 rounded-lg">
-                        <h3 className="text-center text-lg font-medium mb-4">Départ dans :</h3>
-                        <Countdown targetDate={nextTrip.reservation.trajet.dateDepart} />
+                        <h3 className="text-center text-lg font-medium mb-4 text-blue-800">Le départ est prévu dans :</h3>
+                        {/* On passe la date et l'heure séparément */}
+                        <Countdown 
+                            targetDate={nextTrip.reservation.trajet.dateDepart} 
+                            departureTime={nextTrip.reservation.trajet.heureDepart} 
+                        />
                     </div>
                 ) : (
                     <div className="text-center">
@@ -100,15 +118,13 @@ const ClientDashboardPage = () => {
                 )}
             </div>
         ) : (
-            <p className="text-gray-500">Vous n'avez aucune réservation de voyage à venir.</p>
+            <p className="text-gray-500">{nextTrip?.message || "Vous n'avez aucune réservation de voyage à venir."}</p>
         )}
       </div>
 
-      {/* Widget de suivi de colis */}
-      {/* On peut réutiliser le composant de la page publique ici */}
       <div className="bg-white rounded-xl shadow-lg p-8">
         <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3"><FiBox/> Suivre un Colis</h2>
-        {/* Intégrer ici le formulaire de suivi de colis */}
+        {/* Intégrer ici le formulaire de suivi de colis (PublicColisTrackingPage en tant que composant) */}
       </div>
     </div>
   );
