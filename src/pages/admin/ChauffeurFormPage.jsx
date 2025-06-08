@@ -12,7 +12,7 @@ const ChauffeurFormPage = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({ prenom: '', nom: '', telephone: '', bus: '' });
-  const [buses, setBuses] = useState([]); // Initialisation correcte avec un tableau vide
+  const [buses, setBuses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(true);
   const [error, setError] = useState('');
@@ -20,16 +20,15 @@ const ChauffeurFormPage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // --- CORRECTION CI-DESSOUS ---
-        const busRes = await api.get('/admin/bus');
-        // On s'assure d'extraire le tableau 'buses' de l'objet de réponse
-        if (busRes.data && Array.isArray(busRes.data.buses)) {
-            setBuses(busRes.data.buses);
+        const busResponse = await api.get('/admin/bus');
+        
+        // On vérifie que la réponse est un tableau et on le stocke
+        if (Array.isArray(busResponse.data)) {
+            setBuses(busResponse.data);
         } else {
-            console.warn("La réponse de l'API pour les bus n'a pas le format attendu:", busRes.data);
-            setBuses([]); // On met un tableau vide en cas de format inattendu
+            console.error("Format de réponse inattendu pour les bus:", busResponse.data);
+            setBuses([]); // Sécurité pour éviter un crash
         }
-        // -----------------------------
 
         if (isEditMode) {
           const chauffeurRes = await api.get(`/admin/chauffeurs/${id}`);
@@ -79,12 +78,24 @@ const ChauffeurFormPage = () => {
                 <input name="nom" value={formData.nom} onChange={handleChange} placeholder="Nom" required className="w-full border p-2 rounded-md" />
             </div>
           <input type="tel" name="telephone" value={formData.telephone} onChange={handleChange} placeholder="Téléphone" required className="w-full border p-2 rounded-md" />
-          <select name="bus" value={formData.bus} onChange={handleChange} className="w-full border p-2 rounded-md">
-            <option value="">— Affecter un bus (optionnel) —</option>
-            {buses.map(b => (
-                <option key={b._id} value={b._id}>{b.numero} ({b.etat})</option>
-            ))}
-          </select>
+          
+          <div className="space-y-1">
+            <label htmlFor="bus-select" className="block font-medium text-sm text-gray-700">Affecter un bus (optionnel)</label>
+            <select id="bus-select" name="bus" value={formData.bus} onChange={handleChange} className="w-full border p-2 rounded-md bg-gray-50">
+                <option value="">— Aucun bus —</option>
+                {buses.length > 0 ? (
+                    buses.map(b => (
+                        <option key={b._id} value={b._id} disabled={b.etat !== 'en service'}>
+                            {b.numero} ({b.etat})
+                        </option>
+                    ))
+                ) : (
+                    <option disabled>Chargement des bus...</option>
+                )}
+            </select>
+            <p className="text-xs text-gray-500">Seuls les bus "en service" sont sélectionnables.</p>
+          </div>
+
           <div className="flex justify-end gap-4 pt-4">
             <Button type="button" variant="outline" onClick={() => navigate('/admin/chauffeurs')}>Annuler</Button>
             <Button type="submit" disabled={loading}>
