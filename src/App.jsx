@@ -83,7 +83,7 @@ function App() {
             <Route path="colis" element={<ColisDashboardPage />} />
             <Route path="colis/new" element={<ColisFormPage />} />
             <Route path="colis/:id/edit" element={<ColisFormPage />} />
-            <Route path="paiements" element={<StatsPage />} />
+            <Route path="stats" element={<StatsPage />} />
           </Route>
 
           <Route path="*" element={<div>404 - Page Non Trouvée</div>} />
