@@ -16,9 +16,12 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
+  // On revient aux liens de navigation originaux et riches
   const navLinks = [
-    { name: 'Recherche', path: '/search' },
-    { name: 'Suivre Colis', path: '/track-colis' }
+    { name: 'Services', path: '/#services' },
+    { name: 'Destinations', path: '/#destinations' },
+    { name: 'Réservations', path: '/search' },
+    { name: 'Contact', path: '/#contact' },
   ];
 
   return (
@@ -34,15 +37,24 @@ const Navbar = () => {
             <img src="/assets/mybus.webp" alt="MyBus Logo" className="h-16 w-auto object-contain" />
           </Link>
 
+          {/* Navigation Desktop */}
           <div className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
-              <Link key={link.name} to={link.path} className="font-medium text-gray-700 hover:text-pink-600 transition-colors">
-                {link.name}
-              </Link>
+              // Utilisation de <a> pour les liens d'ancre sur la même page
+              link.path.startsWith('/#') ? (
+                <a key={link.name} href={link.path} className="font-medium text-gray-700 hover:text-pink-600 transition-colors">
+                  {link.name}
+                </a>
+              ) : (
+                <Link key={link.name} to={link.path} className="font-medium text-gray-700 hover:text-pink-600 transition-colors">
+                  {link.name}
+                </Link>
+              )
             ))}
           </div>
           
-          <div className="hidden md:flex items-center gap-4">
+          {/* Section Droite : Authentification ou Profil */}
+          <div className="hidden md:flex items-center gap-4 ml-auto">
             {user ? (
               <>
                 {user.role === 'admin' ? (
@@ -65,7 +77,8 @@ const Navbar = () => {
             )}
           </div>
           
-          <div className="md:hidden">
+          {/* Bouton Menu Mobile */}
+          <div className="md:hidden ml-auto">
             <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-md text-gray-700">
               {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
             </button>
@@ -73,6 +86,7 @@ const Navbar = () => {
         </div>
       </div>
 
+      {/* Menu Mobile */}
       {isOpen && (
         <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -80,9 +94,15 @@ const Navbar = () => {
             className="md:hidden bg-white shadow-lg py-4 px-4 space-y-2"
         >
             {navLinks.map((link) => (
-                <Link key={link.name} to={link.path} onClick={() => setIsOpen(false)} className="block px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+                link.path.startsWith('/#') ? (
+                  <a key={link.name} href={link.path} onClick={() => setIsOpen(false)} className="block px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100">
                     {link.name}
-                </Link>
+                  </a>
+                ) : (
+                  <Link key={link.name} to={link.path} onClick={() => setIsOpen(false)} className="block px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+                      {link.name}
+                  </Link>
+                )
             ))}
             <div className="border-t pt-4 mt-2 space-y-2">
                 {user ? (
