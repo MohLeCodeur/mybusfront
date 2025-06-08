@@ -15,7 +15,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,9 +23,12 @@ const LoginPage = () => {
     setError('');
     try {
       const user = await login(email, password);
+      
+      // Redirige vers le bon dashboard en fonction du rôle
       if (user.role === 'admin') {
-        navigate('/admin');
+        navigate('/admin/dashboard', { replace: true });
       } else {
+        // Redirige le client vers la page d'où il venait, ou son dashboard par défaut
         navigate(from, { replace: true });
       }
     } catch (err) {
@@ -37,9 +40,7 @@ const LoginPage = () => {
   return (
     <div className="flex-grow flex items-center justify-center p-4">
       <div className="bg-white shadow-2xl rounded-3xl p-8 md:p-12 w-full max-w-md">
-        <h2 className="text-3xl font-extrabold text-center text-pink-600 mb-8 font-playfair">
-          Connexion
-        </h2>
+        <h2 className="text-3xl font-extrabold text-center text-pink-600 mb-8 font-playfair">Connexion</h2>
         {error && <p className="text-red-500 bg-red-50 text-center p-3 rounded-lg mb-4">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -67,5 +68,4 @@ const LoginPage = () => {
     </div>
   );
 };
-
 export default LoginPage;

@@ -1,7 +1,7 @@
 // src/components/public/Navbar.jsx
 import React, { useState, useContext } from 'react';
 import { motion } from 'framer-motion';
-import { FiMenu, FiX, FiUser, FiLogOut, FiGrid } from 'react-icons/fi';
+import { FiMenu, FiX, FiUser, FiLogOut, FiGrid, FiLayout } from 'react-icons/fi';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
 
@@ -17,10 +17,8 @@ const Navbar = () => {
   };
 
   const navLinks = [
-    { name: 'Services', path: '/#services' },
-    { name: 'Destinations', path: '/#destinations' },
-    { name: 'Réservations', path: '/search' },
-    { name: 'Contact', path: '/#contact' },
+    { name: 'Recherche', path: '/search' },
+    { name: 'Suivre Colis', path: '/track-colis' }
   ];
 
   return (
@@ -36,7 +34,6 @@ const Navbar = () => {
             <img src="/assets/mybus.webp" alt="MyBus Logo" className="h-16 w-auto object-contain" />
           </Link>
 
-          {/* Navigation Desktop */}
           <div className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
               <Link key={link.name} to={link.path} className="font-medium text-gray-700 hover:text-pink-600 transition-colors">
@@ -45,30 +42,29 @@ const Navbar = () => {
             ))}
           </div>
           
-          {/* Section Droite : Authentification ou Profil */}
           <div className="hidden md:flex items-center gap-4">
             {user ? (
               <>
-                {user.role === 'admin' && (
-                  <Link to="/admin" className="flex items-center gap-2 px-4 py-2 rounded-full font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
-                    <FiGrid />
-                    Dashboard
+                {user.role === 'admin' ? (
+                  <Link to="/admin/dashboard" className="flex items-center gap-2 px-4 py-2 rounded-full font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
+                    <FiGrid /> Admin
+                  </Link>
+                ) : (
+                  <Link to="/dashboard" className="flex items-center gap-2 px-4 py-2 rounded-full font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
+                    <FiLayout /> Mon Compte
                   </Link>
                 )}
                 <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 rounded-full font-medium text-white bg-red-500 hover:bg-red-600 transition">
-                  <FiLogOut />
-                  Déconnexion
+                  <FiLogOut /> Déconnexion
                 </button>
               </>
             ) : (
               <Link to="/login" className="flex items-center gap-2 px-5 py-2 rounded-full font-medium text-white bg-gradient-to-r from-pink-500 via-fuchsia-500 to-blue-500 hover:shadow-lg transition">
-                <FiUser />
-                Connexion
+                <FiUser /> Connexion
               </Link>
             )}
           </div>
           
-          {/* Bouton Menu Mobile */}
           <div className="md:hidden">
             <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-md text-gray-700">
               {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
@@ -77,7 +73,6 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Menu Mobile */}
       {isOpen && (
         <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -92,9 +87,13 @@ const Navbar = () => {
             <div className="border-t pt-4 mt-2 space-y-2">
                 {user ? (
                     <>
-                        {user.role === 'admin' && (
-                            <Link to="/admin" onClick={() => setIsOpen(false)} className="flex items-center gap-2 w-full px-4 py-2 rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200">
-                                <FiGrid /> Dashboard
+                        {user.role === 'admin' ? (
+                            <Link to="/admin/dashboard" onClick={() => setIsOpen(false)} className="flex items-center gap-2 w-full px-4 py-2 rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200">
+                                <FiGrid /> Admin
+                            </Link>
+                        ) : (
+                            <Link to="/dashboard" onClick={() => setIsOpen(false)} className="flex items-center gap-2 w-full px-4 py-2 rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200">
+                                <FiLayout /> Mon Compte
                             </Link>
                         )}
                         <button onClick={handleLogout} className="flex items-center gap-2 w-full px-4 py-2 rounded-md text-white bg-red-500 hover:bg-red-600">

@@ -5,14 +5,7 @@ import AuthContext from '../../context/AuthContext';
 import { FiUserPlus, FiLoader } from 'react-icons/fi';
 
 const RegisterPage = () => {
-  const [formData, setFormData] = useState({
-    prenom: '',
-    nom: '',
-    email: '',
-    telephone: '',
-    mot_de_passe: '',
-    confirmPassword: ''
-  });
+  const [formData, setFormData] = useState({ prenom: '', nom: '', email: '', telephone: '', mot_de_passe: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -32,14 +25,19 @@ const RegisterPage = () => {
     setLoading(true);
     setError('');
     try {
-      await register({
+      const user = await register({
         prenom: formData.prenom,
         nom: formData.nom,
         email: formData.email,
         telephone: formData.telephone,
         mot_de_passe: formData.mot_de_passe
       });
-      navigate('/');
+      // Redirige vers le bon dashboard en fonction du rôle
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Une erreur est survenue.');
       setLoading(false);
@@ -49,9 +47,7 @@ const RegisterPage = () => {
   return (
     <div className="flex-grow flex items-center justify-center p-4">
       <div className="bg-white shadow-2xl rounded-3xl p-8 md:p-12 w-full max-w-md">
-        <h2 className="text-3xl font-extrabold text-center text-pink-600 mb-8 font-playfair">
-          Créer un compte
-        </h2>
+        <h2 className="text-3xl font-extrabold text-center text-pink-600 mb-8 font-playfair">Créer un compte</h2>
         {error && <p className="text-red-500 bg-red-50 text-center p-3 rounded-lg mb-4">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -74,5 +70,4 @@ const RegisterPage = () => {
     </div>
   );
 };
-
 export default RegisterPage;
