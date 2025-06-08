@@ -36,7 +36,8 @@ import ReservationFormPage from './pages/admin/ReservationFormPage';
 import ColisDashboardPage from './pages/admin/ColisDashboardPage';
 import ColisFormPage from './pages/admin/ColisFormPage';
 import StatsPage from './pages/admin/StatsPage';
-
+import ClientDashboardPage from './pages/public/ClientDashboardPage';
+import TrackingMapPage from './pages/public/TrackingMapPage';
 function App() {
   return (
     <AuthProvider>
@@ -50,7 +51,8 @@ function App() {
             <Route path="/confirmation/:id" element={<ConfirmationPage />} />
             <Route path="/payment-failed" element={<PaymentFailedPage />} />
             <Route path="/track-colis" element={<PublicColisTrackingPage />} />
-            
+             <Route path="/dashboard" element={<ProtectedRoute><ClientDashboardPage /></ProtectedRoute>} />
+    <Route path="/tracking/map/:liveTripId" element={<ProtectedRoute><TrackingMapPage /></ProtectedRoute>} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
           </Route>
