@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { FiLoader, FiEdit } from 'react-icons/fi';
+import { FiLoader, FiEdit, FiCheckCircle } from 'react-icons/fi';
 
 const ReservationListPage = () => {
   const [reservations, setReservations] = useState([]);
@@ -12,24 +12,41 @@ const ReservationListPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Appel à la route admin pour récupérer toutes les réservations
+  // Fonction pour charger ou recharger les données
+  const fetchReservations = () => {
+    setLoading(true);
     api.get('/admin/reservations/all')
       .then(res => {
-        // Sécurité : on s'assure que la réponse est bien un tableau
         if (Array.isArray(res.data)) {
           setReservations(res.data);
         } else {
           setReservations([]);
-          console.warn("La réponse de l'API pour les réservations n'est pas un tableau:", res.data);
         }
       })
       .catch(err => {
         setError(err.response?.data?.message || 'Erreur lors du chargement des réservations.');
-        setReservations([]); // En cas d'erreur, on initialise avec un tableau vide
+        setReservations([]);
       })
       .finally(() => setLoading(false));
-  }, []); // Le tableau de dépendances vide assure que l'appel ne se fait qu'une fois
+  };
+
+  // Chargement initial des données
+  useEffect(() => {
+    fetchReservations();
+  }, []); // Le tableau vide assure que cela ne se lance qu'une fois au montage
+
+  // Fonction pour confirmer manuellement une réservation
+  const handleConfirm = async (id) => {
+    if (window.confirm("Voulez-vous vraiment confirmer cette réservation ? Cela simulera un paiement réussi.")) {
+      try {
+        await api.post(`/admin/reservations/${id}/confirm`);
+        // Recharger la liste pour afficher le nouveau statut
+        fetchReservations(); 
+      } catch (err) {
+        alert(err.response?.data?.message || "Une erreur est survenue lors de la confirmation.");
+      }
+    }
+  };
   
   // Fonction pour déterminer la couleur du badge de statut
   const getStatusBadge = (status) => {
@@ -39,7 +56,7 @@ const ReservationListPage = () => {
         case 'annulée': return 'bg-red-100 text-red-800';
         default: return 'bg-gray-100 text-gray-800';
     }
-  }
+  };
 
   return (
     <Card>
@@ -63,7 +80,7 @@ const ReservationListPage = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trajet</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Rés.</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Places</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Places</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -82,13 +99,25 @@ const ReservationListPage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => navigate(`/admin/reservations/${r._id}/edit`)}
-                        >
-                          <FiEdit className="mr-1 h-3 w-3" /> Modifier
-                        </Button>
+                        <div className="flex justify-end items-center gap-2">
+                            {/* Le bouton "Confirmer" n'apparaît que si le statut est 'en_attente' */}
+                            {r.statut === 'en_attente' && (
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleConfirm(r._id)}
+                                  className="bg-green-500 hover:bg-green-600 text-white"
+                                >
+                                    <FiCheckCircle className="mr-1 h-3 w-3"/> Confirmer
+                                </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(`/admin/reservations/${r._id}/edit`)}
+                            >
+                              <FiEdit className="mr-1 h-3 w-3" /> Modifier
+                            </Button>
+                        </div>
                       </td>
                     </tr>
                   ))
