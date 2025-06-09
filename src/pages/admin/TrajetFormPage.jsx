@@ -11,16 +11,19 @@ const TrajetFormPage = () => {
     const isEditMode = Boolean(id);
     const navigate = useNavigate();
 
+    // L'état initial du formulaire inclut maintenant les objets pour les coordonnées
     const [formData, setFormData] = useState({
         villeDepart: '',
         villeArrivee: '',
+        coordsDepart: { lat: '', lng: '' },
+        coordsArrivee: { lat: '', lng: '' },
         compagnie: '',
         dateDepart: '',
         heureDepart: '',
         prix: '',
         placesDisponibles: '',
         bus: '',
-        isActive: true // <-- On initialise le formulaire avec le trajet actif par défaut
+        isActive: true
     });
     const [buses, setBuses] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -35,17 +38,24 @@ const TrajetFormPage = () => {
                 
                 if (isEditMode) {
                     const trajetRes = await api.get(`/public/trajets/${id}`);
-                    const trajetData = {
-                        ...trajetRes.data,
+                    const { 
+                        coordsDepart = { lat: '', lng: '' }, 
+                        coordsArrivee = { lat: '', lng: '' }, 
+                        ...rest 
+                    } = trajetRes.data;
+                    
+                    setFormData({
+                        ...rest,
                         dateDepart: new Date(trajetRes.data.dateDepart).toISOString().split('T')[0],
                         bus: trajetRes.data.bus?._id || '',
-                        // S'assurer que 'isActive' est bien un booléen
+                        coordsDepart,
+                        coordsArrivee,
                         isActive: typeof trajetRes.data.isActive === 'boolean' ? trajetRes.data.isActive : true
-                    };
-                    setFormData(trajetData);
+                    });
                 }
             } catch (err) {
-                setError("Erreur de chargement des données.");
+                setError("Erreur de chargement des données. Veuillez vérifier la console.");
+                console.error(err);
             } finally {
                 setFormLoading(false);
             }
@@ -53,10 +63,21 @@ const TrajetFormPage = () => {
         loadData();
     }, [id, isEditMode]);
 
+    // Gère les changements pour les champs simples
     const handleChange = (e) => {
-        // Logique spéciale pour la checkbox 'isActive'
-        const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-        setFormData({ ...formData, [e.target.name]: value });
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+    };
+
+    // Gère les changements pour les champs de coordonnées
+    const handleCoordChange = (point, coord, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [point]: { ...prev[point], [coord]: value }
+        }));
     };
 
     const handleSubmit = async (e) => {
@@ -69,6 +90,12 @@ const TrajetFormPage = () => {
                 payload.bus = null;
             }
             
+            // S'assurer que les coordonnées sont bien des nombres
+            payload.coordsDepart.lat = parseFloat(payload.coordsDepart.lat);
+            payload.coordsDepart.lng = parseFloat(payload.coordsDepart.lng);
+            payload.coordsArrivee.lat = parseFloat(payload.coordsArrivee.lat);
+            payload.coordsArrivee.lng = parseFloat(payload.coordsArrivee.lng);
+
             const apiCall = isEditMode 
                 ? api.put(`/admin/trajets/${id}`, payload) 
                 : api.post('/admin/trajets', payload);
@@ -81,19 +108,20 @@ const TrajetFormPage = () => {
         }
     };
 
-    if(formLoading) return <div>Chargement du formulaire...</div>;
+    if (formLoading) return <div>Chargement du formulaire...</div>;
 
     return (
-        <Card className="max-w-2xl mx-auto">
-            <CardHeader><CardTitle>{isEditMode ? 'Modifier le trajet' : 'Ajouter un trajet'}</CardTitle></CardHeader>
+        <Card className="max-w-3xl mx-auto">
+            <CardHeader><CardTitle>{isEditMode ? 'Modifier le Trajet' : 'Ajouter un Nouveau Trajet'}</CardTitle></CardHeader>
             <CardContent>
                 {error && <p className="text-red-500 bg-red-50 p-3 rounded-lg mb-4">{error}</p>}
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Informations générales */}
                     <div className="grid md:grid-cols-2 gap-4">
                         <input name="villeDepart" value={formData.villeDepart} onChange={handleChange} placeholder="Ville de départ" required className="border p-2 rounded-md" />
                         <input name="villeArrivee" value={formData.villeArrivee} onChange={handleChange} placeholder="Ville d'arrivée" required className="border p-2 rounded-md" />
                     </div>
-                    <input name="compagnie" value={formData.compagnie} onChange={handleChange} placeholder="Compagnie" required className="w-full border p-2 rounded-md" />
+                    <input name="compagnie" value={formData.compagnie} onChange={handleChange} placeholder="Compagnie de transport" required className="w-full border p-2 rounded-md" />
                     <div className="grid md:grid-cols-2 gap-4">
                         <input type="date" name="dateDepart" value={formData.dateDepart} onChange={handleChange} required className="border p-2 rounded-md" />
                         <input type="time" name="heureDepart" value={formData.heureDepart} onChange={handleChange} required className="border p-2 rounded-md" />
@@ -107,23 +135,34 @@ const TrajetFormPage = () => {
                         {buses.map(b => <option key={b._id} value={b._id}>{b.numero} ({b.capacite} places)</option>)}
                     </select>
 
-                    {/* --- NOUVEAU CHAMP "ACTIF" --- */}
-                    <div className="flex items-center justify-between pt-4 border-t mt-4">
+                    {/* Coordonnées GPS */}
+                    <div className="space-y-4 pt-4 border-t">
+                        <div className="p-4 border rounded-lg bg-gray-50">
+                            <h3 className="font-medium mb-2 text-gray-700">Coordonnées GPS du Point de Départ</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <input type="number" step="any" value={formData.coordsDepart.lat} onChange={(e) => handleCoordChange('coordsDepart', 'lat', e.target.value)} placeholder="Latitude (ex: 12.6392)" required className="border p-2 rounded-md"/>
+                                <input type="number" step="any" value={formData.coordsDepart.lng} onChange={(e) => handleCoordChange('coordsDepart', 'lng', e.target.value)} placeholder="Longitude (ex: -8.0029)" required className="border p-2 rounded-md"/>
+                            </div>
+                        </div>
+                        <div className="p-4 border rounded-lg bg-gray-50">
+                            <h3 className="font-medium mb-2 text-gray-700">Coordonnées GPS du Point d'Arrivée</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <input type="number" step="any" value={formData.coordsArrivee.lat} onChange={(e) => handleCoordChange('coordsArrivee', 'lat', e.target.value)} placeholder="Latitude (ex: 13.4317)" required className="border p-2 rounded-md"/>
+                                <input type="number" step="any" value={formData.coordsArrivee.lng} onChange={(e) => handleCoordChange('coordsArrivee', 'lng', e.target.value)} placeholder="Longitude (ex: -6.2658)" required className="border p-2 rounded-md"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Statut Actif */}
+                    <div className="flex items-center justify-between pt-4 border-t">
                         <label htmlFor="isActive" className="font-medium text-gray-700">
                             Rendre ce trajet visible au public ?
                             <p className="text-xs text-gray-500 font-normal">Si décoché, le trajet ne sera pas visible dans la recherche.</p>
                         </label>
-                        <input
-                            type="checkbox"
-                            id="isActive"
-                            name="isActive"
-                            checked={formData.isActive}
-                            onChange={handleChange}
-                            className="h-6 w-6 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
-                        />
+                        <input type="checkbox" id="isActive" name="isActive" checked={formData.isActive} onChange={handleChange} className="h-6 w-6 rounded text-blue-600 focus:ring-blue-500 border-gray-300"/>
                     </div>
-                    {/* ------------------------------------------- */}
 
+                    {/* Boutons d'action */}
                     <div className="flex justify-end gap-4 pt-4">
                         <Button type="button" variant="outline" onClick={() => navigate('/admin/trajets')}>Annuler</Button>
                         <Button type="submit" disabled={loading}>
