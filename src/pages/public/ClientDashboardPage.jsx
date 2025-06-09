@@ -3,108 +3,166 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api';
 import AuthContext from '../../context/AuthContext';
-import { FiClock, FiMapPin, FiBox, FiLoader, FiCheckCircle, FiArchive, FiPlusCircle, FiArrowRight } from 'react-icons/fi';
-import { Button } from '../../components/ui/Button.jsx';
+import { FiClock, FiMapPin, FiBox, FiLoader, FiCheckCircle, FiArchive, FiPlusCircle, FiSearch, FiXCircle } from 'react-icons/fi';
 import StatusStepper from '../../components/admin/StatusStepper.jsx';
 
 // ==================================================================
-// WIDGETS INTERNES
+// WIDGETS INTERNES (Inclus dans le même fichier)
 // ==================================================================
 
-// --- WIDGET 1 : Compte à rebours (affichage pur) ---
+// --- WIDGET 1 : Compte à rebours ---
 const CountdownDisplay = ({ targetDateTime }) => {
-    const timeLeft = targetDateTime.getTime() - new Date().getTime();
+    const [timeLeft, setTimeLeft] = useState(targetDateTime.getTime() - new Date().getTime());
+
+    useEffect(() => {
+        if (timeLeft <= 0) return;
+        const timerId = setTimeout(() => {
+            setTimeLeft(timeLeft - 1000);
+        }, 1000);
+        return () => clearTimeout(timerId);
+    }, [timeLeft]);
 
     if (timeLeft <= 0) {
-        return <span className="text-lg font-bold text-green-600">Départ imminent !</span>;
+        return <span className="text-lg font-bold text-green-500 animate-pulse">Départ imminent !</span>;
     }
-    
+
     const formatTime = (value, label) => (
         <div className="text-center">
-            <span className="text-2xl lg:text-4xl font-bold text-gray-800">{String(value).padStart(2, '0')}</span>
-            <span className="block text-xs uppercase text-gray-500">{label}</span>
+            <span className="text-3xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-500 to-blue-500">{String(value).padStart(2, '0')}</span>
+            <span className="block text-xs uppercase text-gray-500 tracking-wider">{label}</span>
         </div>
     );
 
-    const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
-    const minutes = Math.floor((timeLeft / 1000 / 60) % 60);
-    const seconds = Math.floor((timeLeft / 1000) % 60);
+    const d = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+    const h = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+    const m = Math.floor((timeLeft / 1000 / 60) % 60);
+    const s = Math.floor((timeLeft / 1000) % 60);
 
     return (
-        <div className="flex justify-center gap-4 sm:gap-8">
-            {days > 0 && formatTime(days, 'Jours')}
-            {(days > 0 || hours > 0) && formatTime(hours, 'Heures')}
-            {(days > 0 || hours > 0 || minutes > 0) && formatTime(minutes, 'Minutes')}
-            {formatTime(seconds, 'Secondes')}
+        <div className="flex justify-center gap-4 sm:gap-6">
+            {d > 0 && formatTime(d, 'Jours')}
+            {(d > 0 || h > 0) && formatTime(h, 'Heures')}
+            {(d > 0 || h > 0 || m > 0) && formatTime(m, 'Minutes')}
+            {formatTime(s, 'Secondes')}
         </div>
     );
 };
 
 // --- WIDGET 2 : Prochain Voyage ---
 const NextTripWidget = ({ tripData }) => {
-    // État pour forcer le re-rendu chaque seconde
     const [, setNow] = useState(new Date());
-
-    useEffect(() => {
-        const interval = setInterval(() => setNow(new Date()), 1000);
-        return () => clearInterval(interval);
-    }, []);
+    useEffect(() => { const i = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(i); }, []);
 
     if (!tripData || !tripData.reservation) {
-        return <div className="text-center p-8 bg-gray-50 rounded-lg text-gray-500">{tripData?.message || "Aucune réservation de voyage à venir."}</div>;
+        return (
+            <div className="text-center p-8 bg-gray-50/50 rounded-lg">
+                <p className="text-gray-600 mb-4">Vous n'avez aucun voyage à venir.</p>
+                <Link to="/search" className="inline-block px-6 py-2 bg-gradient-to-r from-pink-500 to-blue-500 text-white font-semibold rounded-lg hover:shadow-lg transition">
+                    Réserver maintenant
+                </Link>
+            </div>
+        );
     }
     
     const { trajet } = tripData.reservation;
     const departureDateTime = new Date(`${new Date(trajet.dateDepart).toISOString().split('T')[0]}T${trajet.heureDepart}:00`);
-    
-    // Cette condition est recalculée à chaque seconde
     const isFuture = departureDateTime > new Date();
-    const canTrack = !!tripData.liveTrip;
 
     return (
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-            <div className="grid md:grid-cols-3 gap-4 mb-6 text-center">
-                <div><strong className="block text-gray-500">Trajet</strong>{trajet.villeDepart} → {trajet.villeArrivee}</div>
-                <div><strong className="block text-gray-500">Date</strong>{new Date(trajet.dateDepart).toLocaleDateString('fr-FR')}</div>
-                <div><strong className="block text-gray-500">Heure</strong>{trajet.heureDepart}</div>
-            </div>
-            
-            {isFuture ? (
-                <div className="p-6 bg-blue-50 rounded-lg">
-                    <h3 className="text-center text-lg font-medium mb-4 text-blue-800">Départ dans :</h3>
-                    <CountdownDisplay targetDateTime={departureDateTime} />
+        <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+            <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                        <p className="text-sm text-gray-500">Prochain départ</p>
+                        <h3 className="font-bold text-2xl text-gray-800">{trajet.villeDepart} → {trajet.villeArrivee}</h3>
+                        <p className="text-sm text-pink-600 font-semibold">{new Date(trajet.dateDepart).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à {trajet.heureDepart}</p>
+                    </div>
                 </div>
-            ) : (
-                <div className="text-center mt-4">
-                    {canTrack ? (
-                        <Link to={`/tracking/map/${tripData.liveTrip._id}`} className="inline-block px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition">
-                            <FiMapPin className="inline mr-2"/> Voir le Suivi du Voyage
-                        </Link>
-                    ) : (
-                        <div className="p-4 bg-gray-100 rounded-lg flex flex-col items-center gap-2 text-gray-600">
-                            <FiLoader className="animate-spin" />
-                            <span>En attente du démarrage du voyage...</span>
+                
+                {isFuture ? (
+                    <div className="p-6 bg-blue-50/50 rounded-lg text-center">
+                        <CountdownDisplay targetDateTime={departureDateTime} />
+                    </div>
+                ) : (
+                    <div className="text-center mt-4">
+                        {tripData.liveTrip ? (
+                            <Link to={`/tracking/map/${tripData.liveTrip._id}`} className="inline-block px-8 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-lg hover:shadow-green-400/50">
+                                <FiMapPin className="inline mr-2"/> Suivre en Temps Réel
+                            </Link>
+                        ) : (
+                            <div className="p-4 bg-gray-100 rounded-lg flex items-center justify-center gap-3 text-gray-600">
+                                <FiLoader className="animate-spin" />
+                                <span>En attente du démarrage...</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// --- WIDGET 3 : Suivi de Colis ---
+const ColisWidget = () => {
+    const [code, setCode] = useState('');
+    const [colis, setColis] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleTrack = async (e) => {
+        e.preventDefault();
+        if (!code.trim()) return;
+        setLoading(true);
+        setError('');
+        setColis(null);
+        try {
+            const { data } = await api.get(`/public/colis/track/${code}`);
+            setColis(data);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Colis introuvable.');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    return (
+        <div className="space-y-4">
+            <p className="text-gray-600 text-sm">Avez-vous un code de suivi ? Vérifiez le statut de votre colis ici.</p>
+            <form onSubmit={handleTrack} className="flex gap-2">
+                <input type="text" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().trim())} placeholder="Entrez un code de suivi..." className="flex-grow border p-2 rounded-md focus:ring-2 focus:ring-pink-400"/>
+                <button type="submit" disabled={loading} className="p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300">
+                    {loading ? <FiLoader className="animate-spin"/> : <FiSearch />}
+                </button>
+            </form>
+            {error && <p className="text-red-500 text-sm flex items-center gap-2"><FiXCircle/> {error}</p>}
+            {colis && (
+                <div className="p-4 rounded-lg border bg-gray-50 animate-fade-in">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="font-semibold">{colis.description}</p>
+                            <p className="text-xs text-gray-500 font-mono">{colis.code_suivi}</p>
                         </div>
-                    )}
+                        <p className="font-bold text-blue-600">{colis.prix?.toLocaleString('fr-FR')} FCFA</p>
+                    </div>
+                    <div className="mt-4"><StatusStepper currentStatus={colis.statut} /></div>
                 </div>
             )}
         </div>
     );
 };
 
-// --- WIDGET 3 : Historique des Voyages ---
+// --- WIDGET 4 : Historique des Voyages ---
 const PastTripsWidget = ({ trips }) => {
     if (!trips || trips.length === 0) {
-        return <p className="text-center text-gray-400 py-4">Aucun voyage passé trouvé.</p>;
+        return <p className="text-center text-gray-400 py-4 text-sm">Aucun voyage passé trouvé.</p>;
     }
     return (
         <ul className="space-y-3 max-h-96 overflow-y-auto pr-2">
-            {trips.map(trip => (
+            {trips.slice(0, 5).map(trip => (
                 <li key={trip._id} className="flex justify-between items-center p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                     <div>
-                        <p className="font-medium">{trip.trajet.villeDepart} → {trip.trajet.villeArrivee}</p>
-                        <p className="text-sm text-gray-500">Le {new Date(trip.trajet.dateDepart).toLocaleDateString('fr-FR')}</p>
+                        <p className="font-medium text-sm">{trip.trajet.villeDepart} → {trip.trajet.villeArrivee}</p>
+                        <p className="text-xs text-gray-500">Le {new Date(trip.trajet.dateDepart).toLocaleDateString('fr-FR')}</p>
                     </div>
                     <FiCheckCircle className="text-green-500 text-xl"/>
                 </li>
@@ -130,54 +188,46 @@ const ClientDashboardPage = () => {
                 .finally(() => { if (loading) setLoading(false); });
         };
         fetchData();
-        // Rafraîchir les données du dashboard toutes les 30 secondes
-        const interval = setInterval(fetchData, 30000);
+        const interval = setInterval(fetchData, 30000); // Rafraîchir toutes les 30s
         return () => clearInterval(interval);
     }, [loading]);
 
-    const canBookNewTrip = !dashboardData?.nextTrip?.reservation;
 
     if (loading) return <div className="flex justify-center items-center h-screen"><FiLoader className="animate-spin text-4xl text-blue-500"/></div>;
 
     return (
-        <div className="max-w-7xl mx-auto py-12 px-4">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
-                    Bienvenue, <span className="text-blue-600">{user?.prenom}</span> !
-                </h1>
-                
-                {canBookNewTrip && (
-                    <button 
-                        onClick={() => navigate('/search')} 
-                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-lg hover:shadow-blue-500/50 w-full md:w-auto"
-                    >
-                        <FiPlusCircle/> Réserver un Nouveau Voyage
-                    </button>
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                <div className="lg:col-span-2 space-y-8">
-                    <div>
-                        <h2 className="text-2xl font-semibold mb-4 flex items-center gap-3 text-gray-700"><FiClock/> Mon Prochain Voyage</h2>
-                        <NextTripWidget tripData={dashboardData?.nextTrip} />
-                    </div>
-                    
-                    <div>
-                        <h2 className="text-2xl font-semibold mb-4 flex items-center gap-3 text-gray-700"><FiBox/> Suivi de Colis</h2>
-                        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-                            <p className="text-gray-600 mb-4">Avez-vous un code de suivi ? Vérifiez le statut de votre colis ici.</p>
-                            <Button onClick={() => navigate('/track-colis')} className="w-full md:w-auto">
-                                Suivre un Colis <FiArrowRight className="ml-2"/>
-                            </Button>
-                        </div>
-                    </div>
+        <div className="bg-gradient-to-br from-pink-50 via-blue-50 to-white min-h-screen">
+            <div className="max-w-7xl mx-auto py-16 px-4">
+                <div className="mb-12">
+                    <h1 className="text-4xl md:text-5xl font-bold text-gray-800">
+                        Bienvenue, <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-blue-500">{user?.prenom}</span> !
+                    </h1>
+                    <p className="text-lg text-gray-500 mt-2">Gérez vos voyages et colis en un seul endroit.</p>
                 </div>
 
-                <div className="lg:col-span-1">
-                    <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 sticky top-24">
-                        <h2 className="text-2xl font-semibold mb-4 flex items-center gap-3 text-gray-700"><FiArchive/> Historique des Voyages</h2>
-                        <PastTripsWidget trips={dashboardData?.pastTrips} />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    {/* Colonne de gauche (principale) */}
+                    <div className="lg:col-span-2 space-y-8">
+                        <div className="bg-white/70 backdrop-blur-md rounded-2xl shadow-lg p-6 border">
+                            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-3 text-gray-700"><FiClock/> Mon Prochain Voyage</h2>
+                            <NextTripWidget tripData={dashboardData?.nextTrip} />
+                        </div>
+                        
+                        <div className="bg-white/70 backdrop-blur-md rounded-2xl shadow-lg p-6 border">
+                            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-3 text-gray-700"><FiBox/> Suivi de Colis</h2>
+                            <ColisWidget />
+                        </div>
+                    </div>
+
+                    {/* Colonne de droite (secondaire) */}
+                    <div className="lg:col-span-1">
+                        <div className="bg-white/70 backdrop-blur-md rounded-2xl shadow-lg p-6 border sticky top-24">
+                            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-3 text-gray-700"><FiArchive/> Historique des Voyages</h2>
+                            <PastTripsWidget trips={dashboardData?.pastTrips} />
+                            <Link to="/search" className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 font-semibold rounded-lg hover:bg-blue-100 transition">
+                                <FiPlusCircle/> Nouveau Voyage
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>
