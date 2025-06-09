@@ -5,24 +5,20 @@ import api from '../../api';
 import AuthContext from '../../context/AuthContext';
 import { FiClock, FiMapPin, FiBox, FiLoader, FiCheckCircle, FiArchive, FiPlusCircle, FiArrowRight } from 'react-icons/fi';
 import { Button } from '../../components/ui/Button.jsx';
+import StatusStepper from '../../components/admin/StatusStepper.jsx';
 
-// --- WIDGET 1 : Compte à rebours ---
-const Countdown = ({ targetDate, departureTime }) => {
-    const targetDateTime = new Date(`${new Date(targetDate).toISOString().split('T')[0]}T${departureTime}:00`);
-    const [timeLeft, setTimeLeft] = useState(targetDateTime.getTime() - new Date().getTime());
+// ==================================================================
+// WIDGETS INTERNES
+// ==================================================================
 
-    useEffect(() => {
-        if (timeLeft <= 0) return;
-        const timer = setTimeout(() => {
-            setTimeLeft(timeLeft - 1000);
-        }, 1000);
-        return () => clearTimeout(timer);
-    }, [timeLeft]);
+// --- WIDGET 1 : Compte à rebours (affichage pur) ---
+const CountdownDisplay = ({ targetDateTime }) => {
+    const timeLeft = targetDateTime.getTime() - new Date().getTime();
 
     if (timeLeft <= 0) {
         return <span className="text-lg font-bold text-green-600">Départ imminent !</span>;
     }
-
+    
     const formatTime = (value, label) => (
         <div className="text-center">
             <span className="text-2xl lg:text-4xl font-bold text-gray-800">{String(value).padStart(2, '0')}</span>
@@ -45,16 +41,25 @@ const Countdown = ({ targetDate, departureTime }) => {
     );
 };
 
-// --- WIDGET 2 : Prochain Voyage (LOGIQUE CORRIGÉE) ---
+// --- WIDGET 2 : Prochain Voyage ---
 const NextTripWidget = ({ tripData }) => {
+    // État pour forcer le re-rendu chaque seconde
+    const [, setNow] = useState(new Date());
+
+    useEffect(() => {
+        const interval = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(interval);
+    }, []);
+
     if (!tripData || !tripData.reservation) {
         return <div className="text-center p-8 bg-gray-50 rounded-lg text-gray-500">{tripData?.message || "Aucune réservation de voyage à venir."}</div>;
     }
+    
     const { trajet } = tripData.reservation;
     const departureDateTime = new Date(`${new Date(trajet.dateDepart).toISOString().split('T')[0]}T${trajet.heureDepart}:00`);
-    const isFuture = departureDateTime > new Date();
     
-    // La condition clé : y a-t-il un suivi activé pour ce voyage ?
+    // Cette condition est recalculée à chaque seconde
+    const isFuture = departureDateTime > new Date();
     const canTrack = !!tripData.liveTrip;
 
     return (
@@ -65,23 +70,23 @@ const NextTripWidget = ({ tripData }) => {
                 <div><strong className="block text-gray-500">Heure</strong>{trajet.heureDepart}</div>
             </div>
             
-            {/* Si un suivi existe, on affiche TOUJOURS le bouton pour le voir */}
-            {canTrack ? (
-                 <div className="text-center mt-4">
-                    <Link to={`/tracking/map/${tripData.liveTrip._id}`} className="inline-block px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-lg hover:shadow-green-500/50">
-                        <FiMapPin className="inline mr-2"/> Voir le Suivi du Voyage
-                    </Link>
-                </div>
-            ) : isFuture ? (
-                // Sinon, si le voyage est dans le futur, on affiche le compte à rebours
+            {isFuture ? (
                 <div className="p-6 bg-blue-50 rounded-lg">
                     <h3 className="text-center text-lg font-medium mb-4 text-blue-800">Départ dans :</h3>
-                    <Countdown targetDate={trajet.dateDepart} departureTime={trajet.heureDepart} />
+                    <CountdownDisplay targetDateTime={departureDateTime} />
                 </div>
             ) : (
-                // Sinon, si le voyage est passé ET sans suivi, on affiche un message
-                <div className="p-4 bg-gray-100 rounded-lg text-center text-gray-600">
-                    Le suivi pour ce voyage n'a pas été activé.
+                <div className="text-center mt-4">
+                    {canTrack ? (
+                        <Link to={`/tracking/map/${tripData.liveTrip._id}`} className="inline-block px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition">
+                            <FiMapPin className="inline mr-2"/> Voir le Suivi du Voyage
+                        </Link>
+                    ) : (
+                        <div className="p-4 bg-gray-100 rounded-lg flex flex-col items-center gap-2 text-gray-600">
+                            <FiLoader className="animate-spin" />
+                            <span>En attente du démarrage du voyage...</span>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -94,7 +99,7 @@ const PastTripsWidget = ({ trips }) => {
         return <p className="text-center text-gray-400 py-4">Aucun voyage passé trouvé.</p>;
     }
     return (
-        <ul className="space-y-3">
+        <ul className="space-y-3 max-h-96 overflow-y-auto pr-2">
             {trips.map(trip => (
                 <li key={trip._id} className="flex justify-between items-center p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                     <div>
@@ -108,7 +113,9 @@ const PastTripsWidget = ({ trips }) => {
     );
 };
 
-// --- COMPOSANT PRINCIPAL DE LA PAGE ---
+// ==================================================================
+// COMPOSANT PRINCIPAL DE LA PAGE
+// ==================================================================
 const ClientDashboardPage = () => {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
@@ -116,11 +123,17 @@ const ClientDashboardPage = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        api.get('/dashboard/client-data')
-            .then(res => setDashboardData(res.data))
-            .catch(console.error)
-            .finally(() => setLoading(false));
-    }, []);
+        const fetchData = () => {
+            api.get('/dashboard/client-data')
+                .then(res => setDashboardData(res.data))
+                .catch(console.error)
+                .finally(() => { if (loading) setLoading(false); });
+        };
+        fetchData();
+        // Rafraîchir les données du dashboard toutes les 30 secondes
+        const interval = setInterval(fetchData, 30000);
+        return () => clearInterval(interval);
+    }, [loading]);
 
     const canBookNewTrip = !dashboardData?.nextTrip?.reservation;
 
