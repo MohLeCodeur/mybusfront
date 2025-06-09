@@ -20,7 +20,7 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Réserver un Billet', path: '/search', icon: <FiSearch/> },
     { name: 'Suivre un Colis', path: '/track-colis', icon: <FiPackage/> },
-    { name: 'Aide & Contact', path: '/#contact', icon: <FiPhone/> }, // Garde le lien d'ancre
+    { name: 'Aide & Contact', path: '/contact', icon: <FiPhone/> }, // Garde le lien d'ancre
   ];
 
   // Style pour un NavLink actif

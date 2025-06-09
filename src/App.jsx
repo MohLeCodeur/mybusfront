@@ -20,6 +20,7 @@ import PaymentFailedPage from './pages/public/PaymentFailedPage.jsx';
 import PublicColisTrackingPage from './pages/public/PublicColisTrackingPage.jsx';
 import ClientDashboardPage from './pages/public/ClientDashboardPage.jsx'; // La page du dashboard client
 import TrackingMapPage from './pages/public/TrackingMapPage.jsx';
+import ContactPage from './pages/public/ContactPage.jsx';
 // Pages d'Authentification
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
@@ -50,7 +51,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/track-colis" element={<PublicColisTrackingPage />} />
-            
+            <Route path="/contact" element={<ContactPage />} />
             {/* Routes qui nécessitent d'être connecté (client ou admin) */}
             <Route path="/reservation/:id" element={<ClientProtectedRoute><ReservationPage /></ClientProtectedRoute>} />
             <Route path="/confirmation/:id" element={<ClientProtectedRoute><ConfirmationPage /></ClientProtectedRoute>} />
