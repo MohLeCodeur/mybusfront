@@ -28,19 +28,15 @@ const Countdown = ({ targetDate, departureTime }) => {
     const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
     useEffect(() => {
-        // Met à jour le compte à rebours chaque seconde
         const timer = setTimeout(() => {
             setTimeLeft(calculateTimeLeft());
         }, 1000);
-        // Nettoie le timer quand le composant est démonté
         return () => clearTimeout(timer);
     });
 
-    // Formate l'affichage pour n'afficher que les unités de temps pertinentes
     const timerComponents = Object.entries(timeLeft)
-        .filter(([interval, value], index) => {
-            // Logique pour n'afficher que les unités de temps non nulles
-            const nonZeroEntries = Object.values(timeLeft).slice(0, index);
+        .filter(([interval, value]) => {
+            const nonZeroEntries = Object.values(timeLeft).slice(0, Object.keys(timeLeft).indexOf(interval));
             return value > 0 || nonZeroEntries.some(v => v > 0);
         })
         .map(([interval, value]) => (
@@ -69,39 +65,59 @@ const ClientDashboardPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Récupère le prochain voyage du client au chargement de la page
-    api.get('/tracking/my-next-trip')
-        .then(res => setNextTrip(res.data))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-  }, []);
+    const fetchNextTrip = () => {
+      // Log de débogage pour voir si le rafraîchissement se produit
+      console.log("Mise à jour des données du voyage...");
+      
+      api.get('/tracking/my-next-trip')
+          .then(res => {
+              // Log pour voir les données reçues
+              console.log("Données reçues du backend :", res.data);
+              setNextTrip(res.data);
+          })
+          .catch(console.error)
+          .finally(() => {
+              // On arrête le loader principal uniquement lors du premier chargement
+              if (loading) setLoading(false);
+          });
+    };
 
-  // Affiche un état de chargement
-  if (loading) return (
-    <div className="flex justify-center items-center h-64">
-        <FiLoader className="animate-spin text-4xl text-blue-500"/>
-    </div>
-  );
+    // 1. Appel immédiat au chargement de la page
+    fetchNextTrip();
+
+    // 2. Met en place un intervalle pour rafraîchir les données toutes les 30 secondes
+    const intervalId = setInterval(fetchNextTrip, 30000); // 30 secondes
+
+    // 3. Fonction de nettoyage : arrête l'intervalle quand l'utilisateur quitte la page
+    return () => clearInterval(intervalId);
+    
+  }, []); // Le tableau de dépendances vide est correct pour ce cas d'usage
+
+  // Affiche un état de chargement initial
+  if (loading) {
+    return (
+        <div className="flex justify-center items-center h-64">
+            <FiLoader className="animate-spin text-4xl text-blue-500"/>
+        </div>
+    );
+  }
 
   // Fonction de rendu pour la section "Mon Prochain Voyage"
   const renderNextTrip = () => {
-    // Si pas de voyage trouvé, affiche le message du backend
-    if (!nextTrip || !nextTrip.reservation) {
-        return <p className="text-gray-500 text-center py-4">{nextTrip?.message || "Vous n'avez aucune réservation de voyage à venir."}</p>;
+    if (!nextTrip) {
+        return <p className="text-gray-500 text-center py-4">Recherche de votre prochain voyage...</p>;
+    }
+    if (!nextTrip.reservation) {
+        return <p className="text-gray-500 text-center py-4">{nextTrip.message}</p>;
     }
 
     const { trajet } = nextTrip.reservation;
-    
-    // Construit la date/heure de départ complète pour une comparaison précise
     const departureDateTime = new Date(`${new Date(trajet.dateDepart).toISOString().split('T')[0]}T${trajet.heureDepart}:00`);
     const now = new Date();
-
-    // Condition principale : le départ est-il dans le futur ?
     const isFutureTrip = departureDateTime > now;
     
     return (
         <div>
-            {/* Affichage des détails du trajet */}
             <div className="grid md:grid-cols-3 gap-4 mb-8 text-center border-b pb-6">
                 <div><strong className="block text-gray-500">Trajet</strong>{trajet.villeDepart} → {trajet.villeArrivee}</div>
                 <div><strong className="block text-gray-500">Date</strong>{new Date(trajet.dateDepart).toLocaleDateString('fr-FR')}</div>
@@ -109,7 +125,6 @@ const ClientDashboardPage = () => {
             </div>
             
             {isFutureTrip ? (
-                // CAS 1: Le départ est dans le futur -> Affiche le compte à rebours
                 <div className="p-8 bg-blue-50 rounded-lg">
                     <h3 className="text-center text-lg font-medium mb-4 text-blue-800">Le départ est prévu dans :</h3>
                     <Countdown 
@@ -118,15 +133,12 @@ const ClientDashboardPage = () => {
                     />
                 </div>
             ) : (
-                // CAS 2: L'heure de départ est passée
                 <div className="text-center">
                     {nextTrip.liveTrip?.status === 'En cours' ? (
-                        // CAS 2a: Le voyage a été démarré par un admin -> Affiche le lien de suivi
                         <Link to={`/tracking/map/${nextTrip.liveTrip._id}`} className="inline-block px-8 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-lg hover:shadow-green-500/50">
                             <FiMapPin className="inline mr-2"/> Suivre mon bus en temps réel
                         </Link>
                     ) : (
-                        // CAS 2b: Le voyage n'a pas encore démarré ou est terminé -> Affiche un message
                         <p className="p-4 bg-gray-100 rounded-lg text-gray-700">Votre voyage est sur le point de commencer ou est déjà terminé.</p>
                     )}
                 </div>
@@ -146,7 +158,7 @@ const ClientDashboardPage = () => {
 
       <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
         <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3"><FiBox/> Suivre un Colis</h2>
-        {/* Vous pouvez intégrer ici le composant de suivi de colis de PublicColisTrackingPage */}
+        {/* Ici vous pouvez intégrer le composant de suivi de colis */}
         <p className="text-gray-500">La fonctionnalité de suivi de colis sera ajoutée ici.</p>
       </div>
     </div>
