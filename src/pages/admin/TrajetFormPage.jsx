@@ -12,9 +12,15 @@ const TrajetFormPage = () => {
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
-        villeDepart: '', villeArrivee: '', compagnie: '',
-        dateDepart: '', heureDepart: '', prix: '',
-        placesDisponibles: '', bus: '' // La valeur initiale est ''
+        villeDepart: '',
+        villeArrivee: '',
+        compagnie: '',
+        dateDepart: '',
+        heureDepart: '',
+        prix: '',
+        placesDisponibles: '',
+        bus: '',
+        isActive: true // <-- On initialise le formulaire avec le trajet actif par défaut
     });
     const [buses, setBuses] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -25,22 +31,21 @@ const TrajetFormPage = () => {
         const loadData = async () => {
             try {
                 const busRes = await api.get('/admin/bus');
-                if (Array.isArray(busRes.data)) {
-                    setBuses(busRes.data);
-                } else {
-                    setBuses([]);
-                }
+                setBuses(Array.isArray(busRes.data) ? busRes.data : []);
+                
                 if (isEditMode) {
                     const trajetRes = await api.get(`/public/trajets/${id}`);
                     const trajetData = {
                         ...trajetRes.data,
                         dateDepart: new Date(trajetRes.data.dateDepart).toISOString().split('T')[0],
-                        bus: trajetRes.data.bus?._id || ''
+                        bus: trajetRes.data.bus?._id || '',
+                        // S'assurer que 'isActive' est bien un booléen
+                        isActive: typeof trajetRes.data.isActive === 'boolean' ? trajetRes.data.isActive : true
                     };
                     setFormData(trajetData);
                 }
             } catch (err) {
-                setError("Erreur de chargement.");
+                setError("Erreur de chargement des données.");
             } finally {
                 setFormLoading(false);
             }
@@ -49,7 +54,9 @@ const TrajetFormPage = () => {
     }, [id, isEditMode]);
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        // Logique spéciale pour la checkbox 'isActive'
+        const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+        setFormData({ ...formData, [e.target.name]: value });
     };
 
     const handleSubmit = async (e) => {
@@ -57,20 +64,14 @@ const TrajetFormPage = () => {
         setLoading(true);
         setError('');
         try {
-            // --- CORRECTION CI-DESSOUS ---
-            // On crée une copie du payload à envoyer
             const payload = { ...formData };
-            
-            // Si formData.bus est une chaîne vide (ce qui arrive si on sélectionne "Aucun bus"),
-            // on la remplace par `null` avant de l'envoyer au backend.
             if (payload.bus === '') {
                 payload.bus = null;
             }
-            // -----------------------------
-
+            
             const apiCall = isEditMode 
-                ? api.put(`/admin/trajets/${id}`, payload) // On envoie le payload corrigé
-                : api.post('/admin/trajets', payload); // On envoie le payload corrigé
+                ? api.put(`/admin/trajets/${id}`, payload) 
+                : api.post('/admin/trajets', payload);
             
             await apiCall;
             navigate('/admin/trajets');
@@ -105,6 +106,24 @@ const TrajetFormPage = () => {
                         <option value="">— Associer un bus (optionnel) —</option>
                         {buses.map(b => <option key={b._id} value={b._id}>{b.numero} ({b.capacite} places)</option>)}
                     </select>
+
+                    {/* --- NOUVEAU CHAMP "ACTIF" --- */}
+                    <div className="flex items-center justify-between pt-4 border-t mt-4">
+                        <label htmlFor="isActive" className="font-medium text-gray-700">
+                            Rendre ce trajet visible au public ?
+                            <p className="text-xs text-gray-500 font-normal">Si décoché, le trajet ne sera pas visible dans la recherche.</p>
+                        </label>
+                        <input
+                            type="checkbox"
+                            id="isActive"
+                            name="isActive"
+                            checked={formData.isActive}
+                            onChange={handleChange}
+                            className="h-6 w-6 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                    </div>
+                    {/* ------------------------------------------- */}
+
                     <div className="flex justify-end gap-4 pt-4">
                         <Button type="button" variant="outline" onClick={() => navigate('/admin/trajets')}>Annuler</Button>
                         <Button type="submit" disabled={loading}>
