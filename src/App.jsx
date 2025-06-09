@@ -19,7 +19,7 @@ import ConfirmationPage from './pages/public/ConfirmationPage.jsx';
 import PaymentFailedPage from './pages/public/PaymentFailedPage.jsx';
 import PublicColisTrackingPage from './pages/public/PublicColisTrackingPage.jsx';
 import ClientDashboardPage from './pages/public/ClientDashboardPage.jsx'; // La page du dashboard client
-
+import TrackingMapPage from './pages/public/TrackingMapPage.jsx';
 // Pages d'Authentification
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
@@ -56,6 +56,7 @@ function App() {
             <Route path="/confirmation/:id" element={<ClientProtectedRoute><ConfirmationPage /></ClientProtectedRoute>} />
             <Route path="/payment-failed" element={<ClientProtectedRoute><PaymentFailedPage /></ClientProtectedRoute>} />
             <Route path="/dashboard" element={<ClientProtectedRoute><ClientDashboardPage /></ClientProtectedRoute>} />
+            <Route path="/tracking/map/:liveTripId" element={<ClientProtectedRoute><TrackingMapPage /></ClientProtectedRoute>} />
           </Route>
 
           {/* --- SECTION ADMIN PROTÉGÉE --- */}
