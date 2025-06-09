@@ -31,7 +31,8 @@
     "react-slick": "^0.30.3",
     "recharts": "^2.15.3",
     "swiper": "^11.2.8",
-    "tailwind-scrollbar-hide": "^2.0.0"
+    "tailwind-scrollbar-hide": "^2.0.0",
+    "use-debounce": "^10.0.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
