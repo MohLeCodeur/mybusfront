@@ -7,7 +7,7 @@ import { FiClock, FiMapPin, FiBox, FiLoader, FiCheckCircle, FiArchive, FiPlusCir
 import StatusStepper from '../../components/admin/StatusStepper.jsx';
 
 // ==================================================================
-// WIDGETS INTERNES (Inclus dans le même fichier)
+// WIDGETS INTERNES (Inclus dans le même fichier pour la simplicité)
 // ==================================================================
 
 // --- WIDGET 1 : Compte à rebours ---
@@ -56,7 +56,7 @@ const NextTripWidget = ({ tripData }) => {
     if (!tripData || !tripData.reservation) {
         return (
             <div className="text-center p-8 bg-gray-50/50 rounded-lg">
-                <p className="text-gray-600 mb-4">Vous n'avez aucun voyage à venir.</p>
+                <p className="text-gray-600 mb-4">{tripData?.message || "Vous n'avez aucune réservation à venir."}</p>
                 <Link to="/search" className="inline-block px-6 py-2 bg-gradient-to-r from-pink-500 to-blue-500 text-white font-semibold rounded-lg hover:shadow-lg transition">
                     Réserver maintenant
                 </Link>
@@ -73,7 +73,7 @@ const NextTripWidget = ({ tripData }) => {
             <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                     <div>
-                        <p className="text-sm text-gray-500">Prochain départ</p>
+                        <p className="text-sm text-gray-500">{isFuture ? "Prochain départ" : "Voyage en cours / Récent"}</p>
                         <h3 className="font-bold text-2xl text-gray-800">{trajet.villeDepart} → {trajet.villeArrivee}</h3>
                         <p className="text-sm text-pink-600 font-semibold">{new Date(trajet.dateDepart).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à {trajet.heureDepart}</p>
                     </div>
@@ -87,12 +87,11 @@ const NextTripWidget = ({ tripData }) => {
                     <div className="text-center mt-4">
                         {tripData.liveTrip ? (
                             <Link to={`/tracking/map/${tripData.liveTrip._id}`} className="inline-block px-8 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-lg hover:shadow-green-400/50">
-                                <FiMapPin className="inline mr-2"/> Suivre en Temps Réel
+                                <FiMapPin className="inline mr-2"/> Voir le Suivi du Voyage
                             </Link>
                         ) : (
                             <div className="p-4 bg-gray-100 rounded-lg flex items-center justify-center gap-3 text-gray-600">
-                                <FiLoader className="animate-spin" />
-                                <span>En attente du démarrage...</span>
+                                <p>{tripData.message || "Le suivi pour ce voyage est indisponible."}</p>
                             </div>
                         )}
                     </div>
@@ -176,7 +175,6 @@ const PastTripsWidget = ({ trips }) => {
 // ==================================================================
 const ClientDashboardPage = () => {
     const { user } = useContext(AuthContext);
-    const navigate = useNavigate();
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -188,10 +186,9 @@ const ClientDashboardPage = () => {
                 .finally(() => { if (loading) setLoading(false); });
         };
         fetchData();
-        const interval = setInterval(fetchData, 30000); // Rafraîchir toutes les 30s
+        const interval = setInterval(fetchData, 30000); // Rafraîchit les données toutes les 30s
         return () => clearInterval(interval);
     }, [loading]);
-
 
     if (loading) return <div className="flex justify-center items-center h-screen"><FiLoader className="animate-spin text-4xl text-blue-500"/></div>;
 
