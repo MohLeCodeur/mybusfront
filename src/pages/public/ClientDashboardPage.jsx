@@ -4,30 +4,25 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api';
 import AuthContext from '../../context/AuthContext';
 import { FiClock, FiMapPin, FiBox, FiLoader, FiCheckCircle, FiArchive, FiPlusCircle, FiArrowRight } from 'react-icons/fi';
-import StatusStepper from '../../components/admin/StatusStepper.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 
-// --- WIDGET 1 : Compte à rebours (simplifié) ---
+// --- WIDGET 1 : Compte à rebours ---
 const Countdown = ({ targetDate, departureTime }) => {
-    // Crée une date/heure de départ précise pour le calcul
     const targetDateTime = new Date(`${new Date(targetDate).toISOString().split('T')[0]}T${departureTime}:00`);
     const [timeLeft, setTimeLeft] = useState(targetDateTime.getTime() - new Date().getTime());
 
     useEffect(() => {
-        // Si le temps est écoulé, on n'a plus besoin de mettre à jour
         if (timeLeft <= 0) return;
-        // Met à jour le temps restant chaque seconde
         const timer = setTimeout(() => {
             setTimeLeft(timeLeft - 1000);
         }, 1000);
-        // Nettoie le timer quand le composant est retiré de l'écran
         return () => clearTimeout(timer);
     }, [timeLeft]);
 
-    // Si le temps est écoulé, le composant ne rend rien du tout.
-    if (timeLeft <= 0) return null;
+    if (timeLeft <= 0) {
+        return <span className="text-lg font-bold text-green-600">Départ imminent !</span>;
+    }
 
-    // Fonction pour formater chaque unité de temps
     const formatTime = (value, label) => (
         <div className="text-center">
             <span className="text-2xl lg:text-4xl font-bold text-gray-800">{String(value).padStart(2, '0')}</span>
@@ -50,7 +45,7 @@ const Countdown = ({ targetDate, departureTime }) => {
     );
 };
 
-// --- WIDGET 2 : Prochain Voyage ---
+// --- WIDGET 2 : Prochain Voyage (LOGIQUE CORRIGÉE) ---
 const NextTripWidget = ({ tripData }) => {
     if (!tripData || !tripData.reservation) {
         return <div className="text-center p-8 bg-gray-50 rounded-lg text-gray-500">{tripData?.message || "Aucune réservation de voyage à venir."}</div>;
@@ -58,6 +53,9 @@ const NextTripWidget = ({ tripData }) => {
     const { trajet } = tripData.reservation;
     const departureDateTime = new Date(`${new Date(trajet.dateDepart).toISOString().split('T')[0]}T${trajet.heureDepart}:00`);
     const isFuture = departureDateTime > new Date();
+    
+    // La condition clé : y a-t-il un suivi activé pour ce voyage ?
+    const canTrack = !!tripData.liveTrip;
 
     return (
         <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
@@ -67,23 +65,23 @@ const NextTripWidget = ({ tripData }) => {
                 <div><strong className="block text-gray-500">Heure</strong>{trajet.heureDepart}</div>
             </div>
             
-            {isFuture ? (
+            {/* Si un suivi existe, on affiche TOUJOURS le bouton pour le voir */}
+            {canTrack ? (
+                 <div className="text-center mt-4">
+                    <Link to={`/tracking/map/${tripData.liveTrip._id}`} className="inline-block px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-lg hover:shadow-green-500/50">
+                        <FiMapPin className="inline mr-2"/> Voir le Suivi du Voyage
+                    </Link>
+                </div>
+            ) : isFuture ? (
+                // Sinon, si le voyage est dans le futur, on affiche le compte à rebours
                 <div className="p-6 bg-blue-50 rounded-lg">
                     <h3 className="text-center text-lg font-medium mb-4 text-blue-800">Départ dans :</h3>
                     <Countdown targetDate={trajet.dateDepart} departureTime={trajet.heureDepart} />
                 </div>
             ) : (
-                <div className="text-center mt-4">
-                    {tripData.liveTrip?.status === 'En cours' ? (
-                        <Link to={`/tracking/map/${tripData.liveTrip._id}`} className="inline-block px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition">
-                            <FiMapPin className="inline mr-2"/> Voir le Suivi du Voyage
-                        </Link>
-                    ) : (
-                        <div className="p-4 bg-gray-100 rounded-lg flex flex-col items-center gap-2 text-gray-600">
-                            <FiLoader className="animate-spin" />
-                            <span>En attente du démarrage du voyage...</span>
-                        </div>
-                    )}
+                // Sinon, si le voyage est passé ET sans suivi, on affiche un message
+                <div className="p-4 bg-gray-100 rounded-lg text-center text-gray-600">
+                    Le suivi pour ce voyage n'a pas été activé.
                 </div>
             )}
         </div>
@@ -124,8 +122,6 @@ const ClientDashboardPage = () => {
             .finally(() => setLoading(false));
     }, []);
 
-    // On calcule si l'utilisateur peut réserver un nouveau billet.
-    // La condition est vraie s'il n'y a PAS de prochain voyage en attente.
     const canBookNewTrip = !dashboardData?.nextTrip?.reservation;
 
     if (loading) return <div className="flex justify-center items-center h-screen"><FiLoader className="animate-spin text-4xl text-blue-500"/></div>;
@@ -137,7 +133,6 @@ const ClientDashboardPage = () => {
                     Bienvenue, <span className="text-blue-600">{user?.prenom}</span> !
                 </h1>
                 
-                {/* Le bouton ne s'affiche que si la condition est remplie */}
                 {canBookNewTrip && (
                     <button 
                         onClick={() => navigate('/search')} 
