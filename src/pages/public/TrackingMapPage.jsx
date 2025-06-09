@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import api from '../../api';
 import { FiLoader, FiArrowLeft, FiMap, FiClock, FiPlay, FiStopCircle, FiFlag, FiNavigation } from 'react-icons/fi';
 import ReactDOMServer from 'react-dom/server';
-
+import { Button } from '../../components/ui/Button.jsx';
 // --- Fonctions Utilitaires et Composants Internes ---
 
 // Fonction pour créer des icônes Leaflet à partir de composants React-Icons
