@@ -1,5 +1,5 @@
 // src/pages/public/TrackingMapPage.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -9,23 +9,11 @@ import { FiLoader, FiArrowLeft, FiMap, FiClock, FiCheckCircle, FiSunrise, FiSuns
 import ReactDOMServer from 'react-dom/server';
 
 // --- Icônes et Composants Internes ---
+const createDivIcon = (iconComponent) => L.divIcon({ html: ReactDOMServer.renderToString(iconComponent), className: 'bg-transparent border-0', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] });
 
-// Icône de bus avec une animation de pulsation pour l'effet temps réel
-const busIcon = L.divIcon({
-    html: ReactDOMServer.renderToString(
-        <div className="relative flex items-center justify-center">
-            <div className="absolute w-8 h-8 bg-blue-500 rounded-full animate-ping opacity-75"></div>
-            <FiNavigation2 size={28} className="relative text-white bg-blue-600 p-1.5 rounded-full shadow-lg" />
-        </div>
-    ),
-    className: 'bg-transparent border-0',
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40]
-});
-
-const startIcon = L.divIcon({ html: ReactDOMServer.renderToString(<div className="p-2 bg-green-500 rounded-full shadow-lg"><FiSunrise size={20} className="text-white"/></div>), className: 'bg-transparent border-0', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] });
-const endIcon = L.divIcon({ html: ReactDOMServer.renderToString(<div className="p-2 bg-red-500 rounded-full shadow-lg"><FiSunset size={20} className="text-white"/></div>), className: 'bg-transparent border-0', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] });
+const busIcon = createDivIcon(<div className="relative"><FiNavigation2 size={28} className="text-white bg-blue-600 p-1.5 rounded-full shadow-lg" /><div className="absolute inset-0 bg-blue-400 rounded-full animate-ping -z-10"></div></div>);
+const startIcon = createDivIcon(<div className="p-2 bg-green-500 rounded-full shadow-lg"><FiSunrise size={20} className="text-white"/></div>);
+const endIcon = createDivIcon(<div className="p-2 bg-red-500 rounded-full shadow-lg"><FiSunset size={20} className="text-white"/></div>);
 
 const ChangeView = ({ center, zoom }) => {
     const map = useMap();
@@ -34,13 +22,6 @@ const ChangeView = ({ center, zoom }) => {
     }, [center, zoom, map]);
     return null;
 };
-
-const InfoCard = ({ icon, title, value }) => (
-    <div>
-        <p className="text-sm text-gray-500 flex items-center gap-2">{icon} {title}</p>
-        <p className="font-bold text-lg text-gray-800">{value}</p>
-    </div>
-);
 
 // --- Composant Principal de la Page ---
 const TrackingMapPage = () => {
@@ -73,56 +54,70 @@ const TrackingMapPage = () => {
 
     return (
         <div className="h-screen w-screen grid grid-cols-1 lg:grid-cols-4">
-            {/* === PANNEAU LATÉRAL D'INFORMATIONS === */}
+            {/* === PANNEAU LATÉRAL D'INFORMATIONS (AMÉLIORÉ) === */}
             <aside className="lg:col-span-1 bg-white p-6 flex flex-col shadow-2xl z-10 overflow-y-auto">
-                <div className="shrink-0">
-                    <Link to="/dashboard" className="flex items-center gap-2 text-sm text-blue-600 hover:underline mb-6"><FiArrowLeft /> Mon Compte</Link>
-                    <h1 className="text-2xl font-bold text-gray-800">{liveTrip.originCityName}</h1>
-                    <div className="flex items-center text-gray-400 my-1">
-                        <div className="w-1 h-8 bg-gray-200 ml-1.5"></div>
+                <Link to="/dashboard" className="flex items-center gap-2 text-sm text-blue-600 hover:underline mb-6 shrink-0"><FiArrowLeft /> Mon Compte</Link>
+                
+                {/* --- BLOC VISUEL DU TRAJET --- */}
+                <div className="mb-6">
+                    <div className="flex items-center gap-4">
+                        <FiSunrise className="text-2xl text-green-500 shrink-0"/>
+                        <div>
+                            <p className="text-xs text-gray-500">Départ</p>
+                            <h2 className="text-xl font-bold text-gray-800">{liveTrip.originCityName}</h2>
+                            <p className="text-xs text-gray-400 font-mono">
+                                {startPosition ? `Lat: ${startPosition[0].toFixed(4)}, Lng: ${startPosition[1].toFixed(4)}` : ''}
+                            </p>
+                        </div>
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-800">{liveTrip.destinationCityName}</h1>
-                    <p className="text-sm mt-2">Bus n° <span className="font-semibold">{liveTrip.busId?.numero || 'N/A'}</span></p>
+                    <div className="h-12 border-l-2 border-dashed border-gray-300 ml-3 my-1"></div>
+                    <div className="flex items-center gap-4">
+                        <FiSunset className="text-2xl text-red-500 shrink-0"/>
+                        <div>
+                            <p className="text-xs text-gray-500">Arrivée</p>
+                            <h2 className="text-xl font-bold text-gray-800">{liveTrip.destinationCityName}</h2>
+                            <p className="text-xs text-gray-400 font-mono">
+                                {endPosition ? `Lat: ${endPosition[0].toFixed(4)}, Lng: ${endPosition[1].toFixed(4)}` : ''}
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="my-8 border-t pt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
-                    <InfoCard 
-                        icon={<FiMap className="text-pink-500"/>} 
-                        title="Distance du Trajet" 
-                        value={liveTrip.routeSummary?.distanceKm ? `${liveTrip.routeSummary.distanceKm} km` : 'N/A'} 
-                    />
-                    <InfoCard 
-                        icon={<FiClock className="text-pink-500"/>} 
-                        title="Durée Estimée" 
-                        value={liveTrip.routeSummary?.durationMin ? `${Math.floor(liveTrip.routeSummary.durationMin / 60)}h ${liveTrip.routeSummary.durationMin % 60}min` : 'N/A'} 
-                    />
-                    <InfoCard 
-                        icon={<FiCheckCircle className="text-pink-500"/>} 
-                        title="Statut" 
-                        value={
-                            <span className={liveTrip.status === 'En cours' ? 'text-green-600 animate-pulse' : 'text-gray-700'}>
-                                {liveTrip.status}
-                            </span>
-                        } 
-                    />
+                {/* --- BLOC DES STATISTIQUES DU VOYAGE --- */}
+                <div className="my-6 border-t pt-6 space-y-4">
+                    <h3 className="font-bold text-gray-700">Détails du voyage</h3>
+                    <div className="p-4 bg-gray-50 rounded-lg grid grid-cols-2 gap-4">
+                        <div>
+                            <p className="text-xs text-gray-500 flex items-center gap-1"><FiMap/> Distance</p>
+                            <p className="font-semibold text-lg">{liveTrip.routeSummary?.distanceKm ? `${liveTrip.routeSummary.distanceKm} km` : 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-500 flex items-center gap-1"><FiClock/> Durée Estimée</p>
+                            <p className="font-semibold text-lg">{liveTrip.routeSummary?.durationMin ? `${Math.floor(liveTrip.routeSummary.durationMin / 60)}h${liveTrip.routeSummary.durationMin % 60}` : 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-500 flex items-center gap-1"><FiClock/> Arrivée Estimée</p>
+                            <p className="font-semibold text-lg">{liveTrip.eta ? new Date(liveTrip.eta).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-500 flex items-center gap-1"><FiCheckCircle/> Statut</p>
+                            <p className={`font-semibold text-lg ${liveTrip.status === 'En cours' ? 'text-green-600 animate-pulse' : 'text-gray-700'}`}>{liveTrip.status}</p>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="mt-auto pt-6 border-t">
-                    <h3 className="font-bold text-gray-700 mb-2">Informations</h3>
-                    <div className="text-sm text-gray-600 space-y-1">
-                        <p>La position du bus est mise à jour toutes les 20 secondes.</p>
-                        <p>Les durées sont des estimations et peuvent varier.</p>
-                    </div>
+                <div className="mt-auto pt-6 border-t text-center">
+                    <p className="text-xs text-gray-400">Bus n°{liveTrip.busId?.numero || 'N/A'} - MyBus Tracking System</p>
                 </div>
             </aside>
 
             {/* === CARTE === */}
             <main className="lg:col-span-3 z-0">
-                <MapContainer center={busPosition || defaultCenter} zoom={8} className="h-full w-full">
-                    <ChangeView center={busPosition} />
+                <MapContainer center={busPosition || defaultCenter} zoom={7} className="h-full w-full">
+                    <ChangeView center={busPosition} zoom={13} />
                     <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                     
-                    {busPosition && <Marker position={busPosition} icon={busIcon}><Popup>Position Actuelle du Bus</Popup></Marker>}
+                    {busPosition && <Marker position={busPosition} icon={busIcon}><Popup>Position Actuelle</Popup></Marker>}
                     {routeCoordinates && (
                         <>
                             {startPosition && <Marker position={startPosition} icon={startIcon}><Popup><b>Départ:</b> {liveTrip.originCityName}</Popup></Marker>}
