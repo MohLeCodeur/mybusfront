@@ -20,6 +20,12 @@ const ChangeView = ({ center, zoom }) => {
     }, [center, zoom, map]);
     return null;
 };
+const InfoCard = ({ icon, title, value }) => (
+    <div>
+        <p className="text-xs text-gray-500 flex items-center gap-1">{icon} {title}</p>
+        <p className="font-bold text-lg text-gray-800">{value}</p>
+    </div>
+);
 
 // --- Composant Principal de la Page ---
 const TrackingMapPage = () => {
@@ -52,14 +58,11 @@ const TrackingMapPage = () => {
 
     return (
         // --- STRUCTURE RESPONSIVE CORRIGÉE ---
-        // Par défaut (mobile) : layout en flex-col.
-        // A partir de 'lg' : layout en grille à 4 colonnes.
         <div className="h-screen w-screen flex flex-col lg:grid lg:grid-cols-4">
             
             {/* === PANNEAU LATÉRAL D'INFORMATIONS === */}
-            {/* Sur mobile, ce panneau est en haut. `shrink-0` empêche qu'il soit écrasé. */}
-            {/* Sur grand écran, il prend 1 colonne et 100% de la hauteur. */}
-            <aside className="lg:col-span-1 bg-white p-6 flex flex-col shadow-2xl z-10 overflow-y-auto shrink-0">
+            {/* Sur mobile, le panneau prend 50% de la hauteur. Sur grand écran, 1 colonne. */}
+            <aside className="h-1/2 lg:h-full lg:col-span-1 bg-white p-6 flex flex-col shadow-2xl z-10 overflow-y-auto">
                 <Link to="/dashboard" className="flex items-center gap-2 text-sm text-blue-600 hover:underline mb-6 shrink-0"><FiArrowLeft /> Mon Compte</Link>
                 
                 <div className="mb-6">
@@ -89,22 +92,10 @@ const TrackingMapPage = () => {
                 <div className="my-6 border-t pt-6 space-y-4">
                     <h3 className="font-bold text-gray-700">Détails du voyage</h3>
                     <div className="p-4 bg-gray-50 rounded-lg grid grid-cols-2 gap-4">
-                        <div>
-                            <p className="text-xs text-gray-500 flex items-center gap-1"><FiMap/> Distance</p>
-                            <p className="font-semibold text-lg">{liveTrip.routeSummary?.distanceKm ? `${liveTrip.routeSummary.distanceKm} km` : 'N/A'}</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-gray-500 flex items-center gap-1"><FiClock/> Durée Estimée</p>
-                            <p className="font-semibold text-lg">{liveTrip.routeSummary?.durationMin ? `${Math.floor(liveTrip.routeSummary.durationMin / 60)}h${liveTrip.routeSummary.durationMin % 60}` : 'N/A'}</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-gray-500 flex items-center gap-1"><FiClock/> Arrivée Estimée</p>
-                            <p className="font-semibold text-lg">{liveTrip.eta ? new Date(liveTrip.eta).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-gray-500 flex items-center gap-1"><FiCheckCircle/> Statut</p>
-                            <p className={`font-semibold text-lg ${liveTrip.status === 'En cours' ? 'text-green-600 animate-pulse' : 'text-gray-700'}`}>{liveTrip.status}</p>
-                        </div>
+                        <InfoCard icon={<FiMap className="text-pink-500"/>} title="Distance" value={liveTrip.routeSummary?.distanceKm ? `${liveTrip.routeSummary.distanceKm} km` : 'N/A'} />
+                        <InfoCard icon={<FiClock className="text-pink-500"/>} title="Durée Estimée" value={liveTrip.routeSummary?.durationMin ? `${Math.floor(liveTrip.routeSummary.durationMin / 60)}h${liveTrip.routeSummary.durationMin % 60}` : 'N/A'} />
+                        <InfoCard icon={<FiClock className="text-pink-500"/>} title="Arrivée Estimée" value={liveTrip.eta ? new Date(liveTrip.eta).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'} />
+                        <InfoCard icon={<FiCheckCircle className="text-green-500"/>} title="Statut" value={<span className={`font-bold ${liveTrip.status === 'En cours' ? 'text-green-600 animate-pulse' : 'text-gray-700'}`}>{liveTrip.status}</span>} />
                     </div>
                 </div>
 
@@ -114,9 +105,8 @@ const TrackingMapPage = () => {
             </aside>
 
             {/* === CARTE === */}
-            {/* Sur mobile, `flex-grow` lui dit de prendre toute la place restante. */}
-            {/* Sur grand écran, elle prend 3 colonnes. */}
-            <main className="flex-grow lg:col-span-3 z-0">
+            {/* Sur mobile, la carte prend 50% de la hauteur. Sur grand écran, 3 colonnes. */}
+            <main className="h-1/2 lg:h-full lg:col-span-3 z-0">
                 <MapContainer center={busPosition || defaultCenter} zoom={7} className="h-full w-full">
                     <ChangeView center={busPosition} zoom={13} />
                     <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
