@@ -29,7 +29,7 @@ export default function Hero () {
   transition={{ delay: 0.2, duration: 0.8 }}
   className="mt-6 max-w-2xl text-lg md:text-xl text-gray-200"
 >
- Réservez facilement vos billets, suivez vos bus par GPS et gérez vos colis en temps réel. Voyagez avec confiance et sérénité.
+ Pour vos trajets au Mali, réservez en un clic, suivez votre bus sur la carte et gardez un œil sur vos colis à chaque étape.
 </motion.p>
 
 
