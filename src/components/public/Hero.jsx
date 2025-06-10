@@ -29,7 +29,7 @@ export default function Hero () {
   transition={{ delay: 0.2, duration: 0.8 }}
   className="mt-6 max-w-2xl text-lg md:text-xl text-gray-200"
 >
-  Réservez et payez votre billet de transport préféré au Mali en un clic. Suivi GPS et notifications en temps réel inclus.
+ Réservez facilement vos billets, suivez vos bus par GPS et gérez vos colis en temps réel. Voyagez avec confiance et sérénité.
 </motion.p>
 
 
