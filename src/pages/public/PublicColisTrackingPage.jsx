@@ -1,36 +1,37 @@
 // src/pages/public/PublicColisTrackingPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api';
+import AuthContext from '../../context/AuthContext';
 import { FiSearch, FiLoader, FiXCircle, FiPackage, FiUser, FiPhone, FiThumbsUp, FiSend, FiCheckCircle } from 'react-icons/fi';
 import StatusStepper from '../../components/admin/StatusStepper.jsx';
 
-// --- NOUVEAU : Objet de configuration pour les messages de statut ---
-const statusInfo = {
-    'enregistré': {
-        icon: <FiThumbsUp className="text-blue-500 text-2xl" />,
-        title: "Colis enregistré avec succès !",
-        message: "Nous avons bien reçu votre colis. Il est en attente de préparation pour l'expédition.",
-        bgColor: "bg-blue-50",
-        borderColor: "border-blue-500",
-    },
-    'encours': {
-        icon: <FiSend className="text-orange-500 text-2xl" />,
-        title: "Votre colis est en route !",
-        message: "Veuillez patienter, votre colis est actuellement en cours de livraison vers sa destination.",
-        bgColor: "bg-orange-50",
-        borderColor: "border-orange-500",
-    },
-    'arrivé': {
-        icon: <FiCheckCircle className="text-green-500 text-2xl" />,
-        title: "Votre colis est arrivé !",
-        message: "Bonne nouvelle ! Votre colis est arrivé à destination et est prêt à être récupéré.",
-        bgColor: "bg-green-50",
-        borderColor: "border-green-500",
-    }
-};
-
-// --- NOUVEAU : Composant pour l'alerte de statut ---
+// --- Composant pour l'alerte de statut ---
 const StatusAlert = ({ status }) => {
+    const statusInfo = {
+        'enregistré': {
+            icon: <FiThumbsUp className="text-blue-500 text-2xl" />,
+            title: "Colis enregistré avec succès !",
+            message: "Nous avons bien reçu votre colis. Il est en attente de préparation pour l'expédition.",
+            bgColor: "bg-blue-50",
+            borderColor: "border-blue-500",
+        },
+        'encours': {
+            icon: <FiSend className="text-orange-500 text-2xl" />,
+            title: "Votre colis est en route !",
+            message: "Veuillez patienter, votre colis est actuellement en cours de livraison vers sa destination.",
+            bgColor: "bg-orange-50",
+            borderColor: "border-orange-500",
+        },
+        'arrivé': {
+            icon: <FiCheckCircle className="text-green-500 text-2xl" />,
+            title: "Votre colis est arrivé !",
+            message: "Bonne nouvelle ! Votre colis est arrivé à destination et est prêt à être récupéré.",
+            bgColor: "bg-green-50",
+            borderColor: "border-green-500",
+        }
+    };
+
     const info = statusInfo[status];
     if (!info) return null;
 
@@ -54,9 +55,23 @@ const PublicColisTrackingPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // --- Utilisation des hooks de contexte et de navigation ---
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+
   const handleTrack = async (e) => {
     e.preventDefault();
     if (!code.trim()) return;
+
+    // --- VÉRIFICATION DE CONNEXION ---
+    if (!user) {
+        // Si l'utilisateur n'est pas connecté, le redirige vers la page de connexion
+        // en gardant en mémoire la page actuelle pour y revenir après connexion.
+        navigate('/login', { state: { from: { pathname: '/track-colis' } } });
+        return; // Arrête l'exécution de la recherche
+    }
+    // ---------------------------------
+
     setLoading(true);
     setError('');
     setColis(null);
@@ -81,8 +96,19 @@ const PublicColisTrackingPage = () => {
             <p className="text-gray-500 mt-1">Entrez votre code pour connaître l'avancement de votre envoi.</p>
           </div>
           <form onSubmit={handleTrack} className="flex gap-3">
-            <input type="text" placeholder="Ex: 8H7K5L3P" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().trim())} className="flex-grow text-lg font-mono tracking-widest border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-pink-400 transition" required />
-            <button type="submit" disabled={loading} className="px-6 bg-gradient-to-r from-pink-500 to-blue-500 text-white font-semibold rounded-lg hover:shadow-lg hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            <input 
+              type="text" 
+              placeholder="Ex: 8H7K5L3P" 
+              value={code} 
+              onChange={(e) => setCode(e.target.value.toUpperCase().trim())} 
+              className="flex-grow text-lg font-mono tracking-widest border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-pink-400 transition" 
+              required 
+            />
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="px-6 bg-gradient-to-r from-pink-500 to-blue-500 text-white font-semibold rounded-lg hover:shadow-lg hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               {loading ? <FiLoader className="animate-spin" /> : <FiSearch />}
             </button>
           </form>
@@ -97,11 +123,9 @@ const PublicColisTrackingPage = () => {
             
             {colis && (
               <div className="bg-white rounded-2xl shadow-xl border border-gray-100 animate-fade-in-up">
-                {/* --- NOUVEAU BLOC DE MESSAGE --- */}
                 <div className="p-6">
                     <StatusAlert status={colis.statut} />
                 </div>
-                {/* ----------------------------- */}
 
                 <div className="p-6 border-t">
                     <h3 className="text-center font-semibold mb-6 text-gray-600">Progression détaillée</h3>
