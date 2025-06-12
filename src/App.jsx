@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 // Ils doivent envelopper toute l'application pour que les états soient partagés.
 import { AuthProvider } from './context/AuthContext.jsx';
 import { NotificationProvider } from './context/NotificationContext.jsx';
-
+import { Link, useNavigate } from 'react-router-dom'; // <-- IMPORT PRINCIPAL
 // --- LAYOUTS ---
 // Les layouts définissent la structure visuelle des pages (ex: avec ou sans sidebar).
 import PublicLayout from './layouts/PublicLayout.jsx';
