@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { FiSave, FiLoader, FiTag, FiDollarSign } from 'react-icons/fi';
+import { FiSave, FiLoader, FiTag, FiDollarSign, FiUser, FiPhone, FiMail } from 'react-icons/fi';
 import StatusStepper from '../../components/admin/StatusStepper.jsx';
 
 const ColisFormPage = () => {
@@ -13,12 +13,17 @@ const ColisFormPage = () => {
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
-        description: '', poids: '', distance: '', valeur: '',
-        expediteur_nom: '', expediteur_telephone: '',
-        destinataire_nom: '', destinataire_telephone: '',
+        description: '',
+        poids: '',
+        distance: '',
+        valeur: '',
+        expediteur_nom: '',
+        expediteur_telephone: '',
+        expediteur_email: '', // <-- Champ ajouté à l'état
+        destinataire_nom: '',
+        destinataire_telephone: '',
         statut: 'enregistré'
     });
-    // États séparés pour les données non modifiables
     const [displayData, setDisplayData] = useState({ code_suivi: '', prix: 0 });
 
     const [loading, setLoading] = useState(false);
@@ -29,7 +34,8 @@ const ColisFormPage = () => {
         if (isEditMode) {
             api.get(`/admin/colis/${id}`)
                 .then(res => {
-                    setFormData(res.data);
+                    // S'assurer que le champ email est initialisé même s'il n'existe pas dans les anciennes données
+                    setFormData({ expediteur_email: '', ...res.data });
                     setDisplayData({ code_suivi: res.data.code_suivi, prix: res.data.prix });
                 })
                 .catch(err => setError('Colis non trouvé'))
@@ -48,28 +54,23 @@ const ColisFormPage = () => {
         setLoading(true);
         setError('');
         try {
+            const apiCall = isEditMode 
+                ? api.put(`/admin/colis/${id}`, formData) 
+                : api.post('/admin/colis', formData);
+            
+            const { data: savedColis } = await apiCall;
+
             if (isEditMode) {
-                // --- Logique améliorée ---
-                const { data: updatedColis } = await api.put(`/admin/colis/${id}`, formData);
-                
-                // Mettre à jour l'affichage du prix avec la nouvelle valeur renvoyée par le backend
-                setDisplayData(prev => ({ ...prev, prix: updatedColis.prix }));
-
-                // Donner un court instant à l'admin pour voir le prix mis à jour
-                setTimeout(() => {
-                    navigate('/admin/colis');
-                }, 1000); // Redirige après 1 seconde
-
+                setDisplayData(prev => ({ ...prev, prix: savedColis.prix }));
+                setTimeout(() => navigate('/admin/colis'), 700);
             } else {
-                // La logique de création ne change pas
-                await api.post('/admin/colis', formData);
                 navigate('/admin/colis');
             }
+
         } catch (err) {
             setError(err.response?.data?.message || 'Une erreur est survenue.');
-            setLoading(false); // On arrête le loader en cas d'erreur
+            setLoading(false);
         }
-        // Pas de setLoading(false) ici si la redirection est immédiate
     };
     
     if(formLoading) return <div>Chargement du formulaire...</div>;
@@ -80,21 +81,15 @@ const ColisFormPage = () => {
             <CardContent>
                 {isEditMode && (
                     <div className="mb-6 p-4 rounded-lg bg-gray-50 border grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="md:col-span-1">
-                            <div className="flex items-center gap-2 mb-2">
-                                <FiTag className="text-gray-500"/>
-                                <h3 className="font-semibold">Code de Suivi</h3>
-                            </div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1"><FiTag className="text-gray-500"/><h3 className="font-semibold">Code Suivi</h3></div>
                             <p className="font-mono text-lg">{displayData.code_suivi}</p>
                         </div>
-                        <div className="md:col-span-1">
-                            <div className="flex items-center gap-2 mb-2">
-                                <FiDollarSign className="text-gray-500"/>
-                                <h3 className="font-semibold">Prix Calculé</h3>
-                            </div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1"><FiDollarSign className="text-gray-500"/><h3 className="font-semibold">Prix Calculé</h3></div>
                             <p className="font-mono text-lg">{displayData.prix?.toLocaleString('fr-FR')} FCFA</p>
                         </div>
-                        <div className="md:col-span-1">
+                        <div>
                             <h3 className="font-semibold mb-2">Statut Actuel</h3>
                             <StatusStepper currentStatus={formData.statut} />
                         </div>
@@ -114,13 +109,19 @@ const ColisFormPage = () => {
                     <div className="grid md:grid-cols-2 gap-8">
                         <div>
                             <h3 className="font-semibold mb-2 text-gray-700">Expéditeur</h3>
-                            <input name="expediteur_nom" value={formData.expediteur_nom} onChange={handleChange} placeholder="Nom de l'expéditeur" required className="w-full border p-2 rounded-md mb-2" />
-                            <input type="tel" name="expediteur_telephone" value={formData.expediteur_telephone} onChange={handleChange} placeholder="Téléphone de l'expéditeur" required className="w-full border p-2 rounded-md" />
+                            <div className="space-y-2">
+                                <input name="expediteur_nom" value={formData.expediteur_nom} onChange={handleChange} placeholder="Nom de l'expéditeur" required className="w-full border p-2 rounded-md" />
+                                <input type="tel" name="expediteur_telephone" value={formData.expediteur_telephone} onChange={handleChange} placeholder="Téléphone de l'expéditeur" required className="w-full border p-2 rounded-md" />
+                                {/* --- CHAMP EMAIL AJOUTÉ --- */}
+                                <input type="email" name="expediteur_email" value={formData.expediteur_email} onChange={handleChange} placeholder="Email (pour les notifications)" className="w-full border p-2 rounded-md" />
+                            </div>
                         </div>
                         <div>
                             <h3 className="font-semibold mb-2 text-gray-700">Destinataire</h3>
-                            <input name="destinataire_nom" value={formData.destinataire_nom} onChange={handleChange} placeholder="Nom du destinataire" required className="w-full border p-2 rounded-md mb-2" />
-                            <input type="tel" name="destinataire_telephone" value={formData.destinataire_telephone} onChange={handleChange} placeholder="Téléphone du destinataire" required className="w-full border p-2 rounded-md" />
+                            <div className="space-y-2">
+                                <input name="destinataire_nom" value={formData.destinataire_nom} onChange={handleChange} placeholder="Nom du destinataire" required className="w-full border p-2 rounded-md" />
+                                <input type="tel" name="destinataire_telephone" value={formData.destinataire_telephone} onChange={handleChange} placeholder="Téléphone du destinataire" required className="w-full border p-2 rounded-md" />
+                            </div>
                         </div>
                     </div>
                      {isEditMode && (
