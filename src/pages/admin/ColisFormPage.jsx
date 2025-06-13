@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { FiSave, FiLoader, FiTag, FiDollarSign, FiUser, FiPhone, FiMail } from 'react-icons/fi';
+import { FiSave, FiLoader, FiTag, FiDollarSign } from 'react-icons/fi';
 import StatusStepper from '../../components/admin/StatusStepper.jsx';
 
 const ColisFormPage = () => {
@@ -12,7 +12,6 @@ const ColisFormPage = () => {
     const isEditMode = Boolean(id);
     const navigate = useNavigate();
 
-    // L'état initial est modifié pour inclure 'trajet' et retirer 'distance' et 'valeur'
     const [formData, setFormData] = useState({
         trajet: '',
         description: '',
@@ -25,26 +24,22 @@ const ColisFormPage = () => {
         statut: 'enregistré'
     });
     const [displayData, setDisplayData] = useState({ code_suivi: '', prix: 0 });
-    const [trajets, setTrajets] = useState([]); // Pour la liste déroulante des trajets
+    const [trajets, setTrajets] = useState([]);
     const [loading, setLoading] = useState(false);
     const [formLoading, setFormLoading] = useState(true);
     const [error, setError] = useState('');
 
     useEffect(() => {
-        // Fonction pour charger toutes les données nécessaires au formulaire
         const loadInitialData = async () => {
             try {
-                // 1. Charger la liste des trajets futurs pour le menu déroulant
                 const trajetsRes = await api.get('/public/trajets/search');
-                if (Array.isArray(trajetsRes.data.docs)) {
+                if (trajetsRes.data && Array.isArray(trajetsRes.data.docs)) {
                     setTrajets(trajetsRes.data.docs);
                 }
 
-                // 2. Si on est en mode édition, charger les données du colis
                 if (isEditMode) {
                     const colisRes = await api.get(`/admin/colis/${id}`);
-                    // On s'assure que le champ trajet est bien l'ID pour la sélection
-                    setFormData({ ...colisRes.data, trajet: colisRes.data.trajet?._id || '' });
+                    setFormData({ expediteur_email: '', ...colisRes.data, trajet: colisRes.data.trajet?._id || '' });
                     setDisplayData({ code_suivi: colisRes.data.code_suivi, prix: colisRes.data.prix });
                 }
             } catch (err) {
@@ -66,20 +61,39 @@ const ColisFormPage = () => {
         e.preventDefault();
         setLoading(true);
         setError('');
+
+        if (!formData.trajet) {
+            setError("Veuillez sélectionner un trajet pour ce colis.");
+            setLoading(false);
+            return;
+        }
+
         try {
-            const apiCall = isEditMode 
-                ? api.put(`/admin/colis/${id}`, formData) 
-                : api.post('/admin/colis', formData);
+            let savedColis;
+            if (isEditMode) {
+                // Pour une mise à jour, on peut appeler la route de mise à jour générale
+                const response = await api.put(`/admin/colis/${id}`, formData);
+                savedColis = response.data;
+            } else {
+                const response = await api.post('/admin/colis', formData);
+                savedColis = response.data;
+            }
+
+            // Mettre à jour l'affichage si on est en mode édition
+            if (isEditMode) {
+                setDisplayData(prev => ({ ...prev, prix: savedColis.prix }));
+            }
             
-            await apiCall;
-            navigate('/admin/colis');
+            // Rediriger après un court délai pour que l'utilisateur voie la mise à jour
+            setTimeout(() => navigate('/admin/colis'), 700);
+
         } catch (err) {
             setError(err.response?.data?.message || 'Une erreur est survenue.');
             setLoading(false);
         }
     };
     
-    if(formLoading) return <div>Chargement du formulaire...</div>;
+    if (formLoading) return <div className="flex justify-center items-center h-96"><FiLoader className="animate-spin text-3xl text-blue-500"/></div>;
 
     return (
         <Card className="max-w-4xl mx-auto">
@@ -103,18 +117,9 @@ const ColisFormPage = () => {
                 )}
                 {error && <p className="text-red-500 bg-red-50 p-3 rounded-lg mb-4">{error}</p>}
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    
-                    {/* --- SÉLECTION DU TRAJET --- */}
                     <div className="p-4 border rounded-lg bg-blue-50/50">
-                        <label htmlFor="trajet" className="font-semibold mb-2 text-gray-700 block">1. Sélectionner le Trajet du Colis</label>
-                        <select
-                            id="trajet"
-                            name="trajet"
-                            value={formData.trajet}
-                            onChange={handleChange}
-                            required
-                            className="w-full border p-2 rounded-md bg-white"
-                        >
+                        <label htmlFor="trajet" className="font-semibold mb-2 text-gray-700 block">1. Sélectionner le Trajet Associé</label>
+                        <select id="trajet" name="trajet" value={formData.trajet} onChange={handleChange} required className="w-full border p-2 rounded-md bg-white">
                             <option value="" disabled>-- Choisir un trajet futur --</option>
                             {trajets.map(t => (
                                 <option key={t._id} value={t._id}>
@@ -124,14 +129,12 @@ const ColisFormPage = () => {
                         </select>
                     </div>
 
-                    {/* --- DÉTAILS DU COLIS --- */}
                     <div className="p-4 border rounded-lg">
                         <h3 className="font-semibold mb-2 text-gray-700">2. Détails du colis</h3>
                         <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Description (ex: Téléphone, Documents...)" required className="w-full border p-2 rounded-md mb-2" />
                         <input type="number" step="any" name="poids" value={formData.poids} onChange={handleChange} placeholder="Poids (kg)" required className="border p-2 rounded-md w-full md:w-1/3" />
                     </div>
 
-                    {/* --- INFORMATIONS EXPÉDITEUR ET DESTINATAIRE --- */}
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="p-4 border rounded-lg">
                             <h3 className="font-semibold mb-2 text-gray-700">3. Expéditeur</h3>
@@ -166,7 +169,7 @@ const ColisFormPage = () => {
                         <Button type="button" variant="outline" onClick={() => navigate('/admin/colis')}>Annuler</Button>
                         <Button type="submit" disabled={loading}>
                             {loading ? <FiLoader className="animate-spin mr-2" /> : <FiSave className="mr-2" />}
-                            {isEditMode ? 'Mettre à jour le colis' : 'Enregistrer le colis'}
+                            {isEditMode ? 'Mettre à jour' : 'Enregistrer'}
                         </Button>
                     </div>
                 </form>
