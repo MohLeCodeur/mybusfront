@@ -12,37 +12,50 @@ const ColisFormPage = () => {
     const isEditMode = Boolean(id);
     const navigate = useNavigate();
 
+    // L'état initial est modifié pour inclure 'trajet' et retirer 'distance' et 'valeur'
     const [formData, setFormData] = useState({
+        trajet: '',
         description: '',
         poids: '',
-        distance: '',
-        valeur: '',
         expediteur_nom: '',
         expediteur_telephone: '',
-        expediteur_email: '', // <-- Champ ajouté à l'état
+        expediteur_email: '',
         destinataire_nom: '',
         destinataire_telephone: '',
         statut: 'enregistré'
     });
     const [displayData, setDisplayData] = useState({ code_suivi: '', prix: 0 });
-
+    const [trajets, setTrajets] = useState([]); // Pour la liste déroulante des trajets
     const [loading, setLoading] = useState(false);
-    const [formLoading, setFormLoading] = useState(isEditMode);
+    const [formLoading, setFormLoading] = useState(true);
     const [error, setError] = useState('');
 
     useEffect(() => {
-        if (isEditMode) {
-            api.get(`/admin/colis/${id}`)
-                .then(res => {
-                    // S'assurer que le champ email est initialisé même s'il n'existe pas dans les anciennes données
-                    setFormData({ expediteur_email: '', ...res.data });
-                    setDisplayData({ code_suivi: res.data.code_suivi, prix: res.data.prix });
-                })
-                .catch(err => setError('Colis non trouvé'))
-                .finally(() => setFormLoading(false));
-        } else {
-            setFormLoading(false);
-        }
+        // Fonction pour charger toutes les données nécessaires au formulaire
+        const loadInitialData = async () => {
+            try {
+                // 1. Charger la liste des trajets futurs pour le menu déroulant
+                const trajetsRes = await api.get('/public/trajets/search');
+                if (Array.isArray(trajetsRes.data.docs)) {
+                    setTrajets(trajetsRes.data.docs);
+                }
+
+                // 2. Si on est en mode édition, charger les données du colis
+                if (isEditMode) {
+                    const colisRes = await api.get(`/admin/colis/${id}`);
+                    // On s'assure que le champ trajet est bien l'ID pour la sélection
+                    setFormData({ ...colisRes.data, trajet: colisRes.data.trajet?._id || '' });
+                    setDisplayData({ code_suivi: colisRes.data.code_suivi, prix: colisRes.data.prix });
+                }
+            } catch (err) {
+                setError("Erreur de chargement des données. Veuillez rafraîchir la page.");
+                console.error(err);
+            } finally {
+                setFormLoading(false);
+            }
+        };
+
+        loadInitialData();
     }, [id, isEditMode]);
 
     const handleChange = (e) => {
@@ -58,15 +71,8 @@ const ColisFormPage = () => {
                 ? api.put(`/admin/colis/${id}`, formData) 
                 : api.post('/admin/colis', formData);
             
-            const { data: savedColis } = await apiCall;
-
-            if (isEditMode) {
-                setDisplayData(prev => ({ ...prev, prix: savedColis.prix }));
-                setTimeout(() => navigate('/admin/colis'), 700);
-            } else {
-                navigate('/admin/colis');
-            }
-
+            await apiCall;
+            navigate('/admin/colis');
         } catch (err) {
             setError(err.response?.data?.message || 'Une erreur est survenue.');
             setLoading(false);
@@ -97,43 +103,65 @@ const ColisFormPage = () => {
                 )}
                 {error && <p className="text-red-500 bg-red-50 p-3 rounded-lg mb-4">{error}</p>}
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <h3 className="font-semibold mb-2 text-gray-700">Détails du colis</h3>
-                        <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Description (ex: Téléphone, Documents...)" required className="w-full border p-2 rounded-md" />
-                        <div className="grid md:grid-cols-3 gap-4 mt-4">
-                            <input type="number" step="any" name="poids" value={formData.poids} onChange={handleChange} placeholder="Poids (kg)" required className="border p-2 rounded-md" />
-                            <input type="number" name="distance" value={formData.distance} onChange={handleChange} placeholder="Distance (km)" required className="border p-2 rounded-md" />
-                            <input type="number" name="valeur" value={formData.valeur} onChange={handleChange} placeholder="Valeur déclarée (FCFA)" required className="border p-2 rounded-md" />
-                        </div>
+                    
+                    {/* --- SÉLECTION DU TRAJET --- */}
+                    <div className="p-4 border rounded-lg bg-blue-50/50">
+                        <label htmlFor="trajet" className="font-semibold mb-2 text-gray-700 block">1. Sélectionner le Trajet du Colis</label>
+                        <select
+                            id="trajet"
+                            name="trajet"
+                            value={formData.trajet}
+                            onChange={handleChange}
+                            required
+                            className="w-full border p-2 rounded-md bg-white"
+                        >
+                            <option value="" disabled>-- Choisir un trajet futur --</option>
+                            {trajets.map(t => (
+                                <option key={t._id} value={t._id}>
+                                    {t.villeDepart} → {t.villeArrivee} (Le {new Date(t.dateDepart).toLocaleDateString('fr-FR')} - {t.heureDepart})
+                                </option>
+                            ))}
+                        </select>
                     </div>
-                    <div className="grid md:grid-cols-2 gap-8">
-                        <div>
-                            <h3 className="font-semibold mb-2 text-gray-700">Expéditeur</h3>
+
+                    {/* --- DÉTAILS DU COLIS --- */}
+                    <div className="p-4 border rounded-lg">
+                        <h3 className="font-semibold mb-2 text-gray-700">2. Détails du colis</h3>
+                        <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Description (ex: Téléphone, Documents...)" required className="w-full border p-2 rounded-md mb-2" />
+                        <input type="number" step="any" name="poids" value={formData.poids} onChange={handleChange} placeholder="Poids (kg)" required className="border p-2 rounded-md w-full md:w-1/3" />
+                    </div>
+
+                    {/* --- INFORMATIONS EXPÉDITEUR ET DESTINATAIRE --- */}
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="p-4 border rounded-lg">
+                            <h3 className="font-semibold mb-2 text-gray-700">3. Expéditeur</h3>
                             <div className="space-y-2">
-                                <input name="expediteur_nom" value={formData.expediteur_nom} onChange={handleChange} placeholder="Nom de l'expéditeur" required className="w-full border p-2 rounded-md" />
-                                <input type="tel" name="expediteur_telephone" value={formData.expediteur_telephone} onChange={handleChange} placeholder="Téléphone de l'expéditeur" required className="w-full border p-2 rounded-md" />
-                                {/* --- CHAMP EMAIL AJOUTÉ --- */}
+                                <input name="expediteur_nom" value={formData.expediteur_nom} onChange={handleChange} placeholder="Nom" required className="w-full border p-2 rounded-md" />
+                                <input type="tel" name="expediteur_telephone" value={formData.expediteur_telephone} onChange={handleChange} placeholder="Téléphone" required className="w-full border p-2 rounded-md" />
                                 <input type="email" name="expediteur_email" value={formData.expediteur_email} onChange={handleChange} placeholder="Email (pour les notifications)" className="w-full border p-2 rounded-md" />
                             </div>
                         </div>
-                        <div>
-                            <h3 className="font-semibold mb-2 text-gray-700">Destinataire</h3>
+                        <div className="p-4 border rounded-lg">
+                            <h3 className="font-semibold mb-2 text-gray-700">4. Destinataire</h3>
                             <div className="space-y-2">
-                                <input name="destinataire_nom" value={formData.destinataire_nom} onChange={handleChange} placeholder="Nom du destinataire" required className="w-full border p-2 rounded-md" />
-                                <input type="tel" name="destinataire_telephone" value={formData.destinataire_telephone} onChange={handleChange} placeholder="Téléphone du destinataire" required className="w-full border p-2 rounded-md" />
+                                <input name="destinataire_nom" value={formData.destinataire_nom} onChange={handleChange} placeholder="Nom" required className="w-full border p-2 rounded-md" />
+                                <input type="tel" name="destinataire_telephone" value={formData.destinataire_telephone} onChange={handleChange} placeholder="Téléphone" required className="w-full border p-2 rounded-md" />
                             </div>
                         </div>
                     </div>
-                     {isEditMode && (
-                        <div>
-                            <label className="block font-medium mb-1">Mettre à jour le statut</label>
+                     
+                    {isEditMode && (
+                        <div className="p-4 border rounded-lg">
+                            <label className="block font-medium mb-1">5. Mettre à jour le statut (manuel)</label>
                             <select name="statut" value={formData.statut} onChange={handleChange} className="w-full border p-2 rounded-md bg-gray-50">
                                 <option value="enregistré">Enregistré</option>
-                                <option value="encours">En cours de livraison</option>
-                                <option value="arrivé">Arrivé à destination</option>
+                                <option value="encours">En cours</option>
+                                <option value="arrivé">Arrivé</option>
+                                <option value="annulé">Annulé</option>
                             </select>
                         </div>
                     )}
+
                     <div className="flex justify-end gap-4 pt-4">
                         <Button type="button" variant="outline" onClick={() => navigate('/admin/colis')}>Annuler</Button>
                         <Button type="submit" disabled={loading}>
