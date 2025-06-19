@@ -14,7 +14,7 @@ const ColisDashboardPage = () => {
 
     const [statusFilter, setStatusFilter] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 10; // On peut afficher plus d'éléments dans un tableau
+    const ITEMS_PER_PAGE = 10;
 
     const fetchColis = useCallback(() => {
         setLoading(true);
@@ -65,7 +65,7 @@ const ColisDashboardPage = () => {
                     <FiPlus className="mr-2" /> Enregistrer un Colis
                 </Button>
             </div>
-            {/* --- CARTE AVEC BORDURE GRISE --- */}
+            
             <Card className="shadow-xl border-t-4 border-gray-200">
                 <CardHeader>
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -86,14 +86,14 @@ const ColisDashboardPage = () => {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {loading ? <div className="text-center p-8"><FiLoader className="animate-spin"/></div> :
-                     error ? <p className="text-red-500">{error}</p> :
+                    {loading ? <div className="text-center p-8"><FiLoader className="animate-spin mx-auto text-3xl text-blue-500"/></div> :
+                     error ? <p className="text-red-500 bg-red-50 p-3 rounded-lg">{error}</p> :
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left">Code Suivi</th>
-                                    <th className="px-6 py-3 text-left">Trajet</th>
+                                    <th className="px-6 py-3 text-left">Trajet Associé</th>
                                     <th className="px-6 py-3 text-left">Exp. → Dest.</th>
                                     <th className="px-6 py-3 text-right">Prix</th>
                                     <th className="px-6 py-3 text-center">Statut</th>
@@ -105,7 +105,7 @@ const ColisDashboardPage = () => {
                                     <tr key={c._id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 font-mono text-blue-600">{c.code_suivi}</td>
                                         <td className="px-6 py-4 text-sm text-gray-500">{c.trajet ? `${c.trajet.villeDepart} → ${c.trajet.villeArrivee}` : 'N/A'}</td>
-                                        <td className="px-6 py-4 text-sm font-medium text-gray-800">{c.expediteur_nom} → {c.destinataire_nom}</td>
+                                        <td className="px-6 py-4 text-sm font-medium">{c.expediteur_nom} → {c.destinataire_nom}</td>
                                         <td className="px-6 py-4 text-right font-semibold">{c.prix?.toLocaleString('fr-FR')} FCFA</td>
                                         <td className="px-6 py-4 text-center">
                                             <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(c.statut)}`}>{c.statut}</span>

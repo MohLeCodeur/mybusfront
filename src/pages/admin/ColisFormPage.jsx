@@ -67,11 +67,11 @@ const ColisFormPage = () => {
         <Button variant="outline" onClick={() => navigate('/admin/colis')} className="mb-6 flex items-center gap-2">
             <FiArrowLeft/> Retour à la liste des colis
         </Button>
-        <Card className="shadow-2xl border-t-4 border-gray-200">
+        <Card className="shadow-2xl border-t-4 border-orange-400">
             <CardHeader>
                 <CardTitle>{isEditMode ? 'Gérer le Colis' : 'Enregistrer un Nouveau Colis'}</CardTitle>
                 <CardDescription>
-                    {isEditMode ? `Mise à jour des informations pour le colis.` : "Remplissez les détails pour enregistrer un nouveau colis."}
+                    {isEditMode ? `Mise à jour pour le colis : ${formData.code_suivi || ''}` : "Remplissez les détails pour enregistrer un nouveau colis."}
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -79,11 +79,12 @@ const ColisFormPage = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {isEditMode ? (
                         <div className="p-3 bg-gray-100 rounded-md text-sm">
-                           <span className="font-semibold">Code Suivi :</span> <span className="font-mono text-blue-600">{formData.code_suivi}</span>
+                           <span className="font-semibold">Trajet Associé :</span> 
+                           <span className="text-blue-600 ml-2">{formData.trajet?.villeDepart} → {formData.trajet?.villeArrivee}</span>
                         </div>
                     ) : (
                         <div>
-                            <label htmlFor="trajet" className="block text-sm font-medium text-gray-700 mb-1">Trajet Associé</label>
+                            <label htmlFor="trajet" className="block text-sm font-medium text-gray-700 mb-1">Trajet du Colis</label>
                             <select id="trajet" name="trajet" value={formData.trajet} onChange={handleChange} required className="w-full border-gray-300 border p-3 rounded-lg bg-white">
                                 <option value="" disabled>-- Choisir un trajet futur --</option>
                                 {trajets.map(t => <option key={t._id} value={t._id}>{t.villeDepart} → {t.villeArrivee} ({new Date(t.dateDepart).toLocaleDateString('fr-FR')})</option>)}
@@ -119,7 +120,7 @@ const ColisFormPage = () => {
                     <div className="flex justify-end pt-4">
                         <Button type="submit" disabled={loading} className="px-8 py-3 bg-gradient-to-r from-pink-500 to-blue-500 text-white shadow-lg">
                             {loading ? <FiLoader className="animate-spin mr-2" /> : <FiSave className="mr-2" />}
-                            {isEditMode ? 'Enregistrer les modifications' : 'Créer le Colis'}
+                            {isEditMode ? 'Enregistrer' : 'Créer le Colis'}
                         </Button>
                     </div>
                 </form>
