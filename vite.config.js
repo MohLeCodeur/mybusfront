@@ -1,20 +1,17 @@
-// vite.config.js (NOUVEAU CODE CORRIGÉ)
+// vite.config.js (NOUVELLE VERSION FINALE)
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
-// https://vitejs.dev/config/
+// Importez directement les plugins PostCSS
+import tailwindcss from 'tailwindcss';
+import autoprefixer from 'autoprefixer';
+
 export default defineConfig({
   plugins: [
     react(),
-
-    // La ligne "tailwindcss()" a été supprimée ici.
-    // Avec la version 3 stable de Tailwind, la configuration se fait
-    // automatiquement via votre fichier postcss.config.js.
-
-    // On conserve votre configuration PWA qui est correcte
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'robots.txt', 'apple-touch-icon.png'],
@@ -35,14 +32,26 @@ export default defineConfig({
     })
   ],
 
-  // On conserve votre configuration d'alias de chemin
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
 
-  // Les sections "css" et "optimizeDeps" ont été supprimées car elles
-  // ne sont plus nécessaires avec une configuration standard et peuvent
-  // causer des conflits.
+  // ==============================================================
+  // === DÉBUT DE LA SECTION CORRIGÉE : CONFIGURATION POSTCSS INTERNE ===
+  // ==============================================================
+  // En spécifiant la configuration ici, on s'assure que Vite
+  // l'utilise et n'essaie pas de chercher un fichier externe.
+  css: {
+    postcss: {
+      plugins: [
+        tailwindcss,
+        autoprefixer,
+      ],
+    },
+  },
+  // ==============================================================
+  // === FIN DE LA SECTION CORRIGÉE
+  // ==============================================================
 });
