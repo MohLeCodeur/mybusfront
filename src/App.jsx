@@ -126,7 +126,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
-                <Route path="/dashboard" element={<ClientProtectedRoute><ClientDashboardPage /></ClientProtectedRoute>} />
+                {/* <Route path="/dashboard" element={<ClientProtectedRoute><ClientDashboardPage /></ClientProtectedRoute>} /> */}
                 <Route path="/reservation/:id" element={<ClientProtectedRoute><ReservationPage /></ClientProtectedRoute>} />
                 <Route path="/confirmation/:id" element={<ClientProtectedRoute><ConfirmationPage /></ClientProtectedRoute>} />
                 <Route path="/payment-failed" element={<ClientProtectedRoute><PaymentFailedPage /></ClientProtectedRoute>} />
