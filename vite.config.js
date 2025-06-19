@@ -1,13 +1,20 @@
+// vite.config.js (NOUVEAU CODE CORRIGÉ)
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import path from 'path'; // <--- 1. AJOUTER CET IMPORT
+import path from 'path';
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss(),
+
+    // La ligne "tailwindcss()" a été supprimée ici.
+    // Avec la version 3 stable de Tailwind, la configuration se fait
+    // automatiquement via votre fichier postcss.config.js.
+
+    // On conserve votre configuration PWA qui est correcte
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'robots.txt', 'apple-touch-icon.png'],
@@ -28,29 +35,14 @@ export default defineConfig({
     })
   ],
 
-  // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-  // 2. AJOUTER CETTE SECTION 'resolve' CI-DESSOUS
-  // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+  // On conserve votre configuration d'alias de chemin
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  // FIN DE LA SECTION AJOUTÉE
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  css: {
-    postcss: {
-      config: false
-    }
-  },
-  optimizeDeps: {
-    exclude: [
-      'swiper/css',
-      'swiper/css/navigation',
-      'swiper/css/pagination',
-      'leaflet/dist/leaflet.css'
-    ]
-  }
+  // Les sections "css" et "optimizeDeps" ont été supprimées car elles
+  // ne sont plus nécessaires avec une configuration standard et peuvent
+  // causer des conflits.
 });
