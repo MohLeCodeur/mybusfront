@@ -1,6 +1,6 @@
 // src/components/admin/Sidebar.jsx
 import React, { useContext } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom'; // Assurez-vous que Link et NavLink sont là
 import { FiGrid, FiUsers, FiMap, FiPackage, FiCreditCard, FiLogOut, FiBarChart2 } from 'react-icons/fi';
 import { FaBus } from 'react-icons/fa';
 import AuthContext from '../../context/AuthContext';
@@ -16,25 +16,21 @@ const navLinks = [
   { to: '/admin/stats', icon: <FiBarChart2 />, label: 'Statistiques' },
 ];
 
-// Composant interne pour chaque lien, gère le style actif/inactif
+// Composant interne pour chaque lien
 const SidebarLink = ({ to, icon, label }) => {
   const baseClasses = "flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out";
   const inactiveClasses = "text-gray-500 hover:bg-blue-50 hover:text-blue-600";
-  // Le style actif utilise maintenant un dégradé subtil
   const activeClasses = "bg-gradient-to-r from-pink-500 to-blue-500 text-white shadow-lg";
 
   return (
-    <NavLink
-      to={to}
-      className={({ isActive }) => `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
-    >
+    <NavLink to={to} className={({ isActive }) => `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}>
       <span className="mr-3 text-lg">{icon}</span>
       <span>{label}</span>
     </NavLink>
   );
 };
 
-// Composant principal de la Sidebar
+// Composant principal
 const Sidebar = () => {
     const { user, logout } = useContext(AuthContext);
     const navigate = useNavigate();
@@ -46,8 +42,6 @@ const Sidebar = () => {
 
   return (
     <aside className="w-64 bg-white h-screen shadow-2xl flex flex-col sticky top-0 border-r border-gray-100">
-      
-      {/* Section du Logo */}
       <div className="p-6 border-b border-gray-100 flex justify-center items-center">
         <Link to="/" className="group">
             <img 
@@ -58,14 +52,12 @@ const Sidebar = () => {
         </Link>
       </div>
       
-      {/* Section des liens de navigation */}
       <nav className="flex-1 px-4 py-6 space-y-2">
         {navLinks.map(link => (
           <SidebarLink key={link.to} {...link} />
         ))}
       </nav>
 
-      {/* Section inférieure avec profil utilisateur et déconnexion */}
       <div className="p-4 border-t border-gray-100">
         <div className="p-3 rounded-lg bg-gray-50 text-center">
             <p className="text-sm font-semibold text-gray-800 truncate">{user?.prenom} {user?.nom}</p>
@@ -82,5 +74,4 @@ const Sidebar = () => {
     </aside>
   );
 };
-
 export default Sidebar;

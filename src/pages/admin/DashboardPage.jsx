@@ -1,6 +1,6 @@
 // src/pages/admin/DashboardPage.jsx
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // <-- L'IMPORT MANQUANT EST ICI
 import { FaBus } from 'react-icons/fa';
 import { FiUsers, FiBox, FiTrendingUp, FiLoader, FiArrowRight } from 'react-icons/fi';
 import api from '../../api';
