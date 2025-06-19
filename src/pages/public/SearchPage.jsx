@@ -7,7 +7,7 @@ import api from '../../api';
 import TrajetCard from '../../components/public/TrajetCard.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 
-const LIMIT = 6; // Nombre de trajets par page
+const LIMIT = 9; // Nombre de trajets par page
 
 const SearchPage = () => {
   const [filters, setFilters] = useState({
