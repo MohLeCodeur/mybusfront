@@ -7,7 +7,7 @@ import { FiClock, FiMapPin, FiBox, FiLoader, FiCheckCircle, FiArchive, FiPlusCir
 import StatusStepper from '../../components/admin/StatusStepper.jsx';
 
 // ==================================================================
-// WIDGETS INTERNES (Inclus dans le même fichier pour la simplicité)
+// WIDGETS INTERNES (Inclus dans le même fichier)
 // ==================================================================
 
 // --- WIDGET 1 : Compte à rebours ---
@@ -16,9 +16,7 @@ const CountdownDisplay = ({ targetDateTime }) => {
 
     useEffect(() => {
         if (timeLeft <= 0) return;
-        const timerId = setTimeout(() => {
-            setTimeLeft(timeLeft - 1000);
-        }, 1000);
+        const timerId = setTimeout(() => { setTimeLeft(timeLeft - 1000); }, 1000);
         return () => clearTimeout(timerId);
     }, [timeLeft]);
 
@@ -48,7 +46,7 @@ const CountdownDisplay = ({ targetDateTime }) => {
     );
 };
 
-// --- WIDGET 2 : Voyage à Afficher (futur ou en cours) ---
+// --- WIDGET 2 : Prochain Voyage ---
 const TripWidget = ({ data }) => {
     if (!data || !data.reservation) {
         return (
@@ -74,11 +72,6 @@ const TripWidget = ({ data }) => {
                         <h3 className="font-bold text-2xl text-gray-800">{trajet.villeDepart} → {trajet.villeArrivee}</h3>
                         <p className="text-sm text-gray-500">{new Date(trajet.dateDepart).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à {trajet.heureDepart}</p>
                     </div>
-                    {data.liveTrip && (
-                        <Link to={`/tracking/map/${data.liveTrip._id}`} className="px-4 py-2 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 text-sm">
-                            <FiMapPin className="inline mr-1"/> Suivre
-                        </Link>
-                    )}
                 </div>
                 {isFuture ? (
                     <div className="p-6 bg-blue-50/50 rounded-lg text-center">
@@ -86,9 +79,19 @@ const TripWidget = ({ data }) => {
                     </div>
                 ) : (
                     <div className="text-center mt-4">
-                         <div className="p-4 bg-gray-100 rounded-lg flex items-center justify-center gap-3 text-gray-600">
-                            <p>{data.liveTrip ? "Le suivi est actif." : "Le suivi pour ce voyage est indisponible."}</p>
-                        </div>
+                        {data.liveTrip ? (
+                            // --- BOUTON DE SUIVI AMÉLIORÉ ---
+                            <Link 
+                                to={`/tracking/map/${data.liveTrip._id}`} 
+                                className="inline-block px-8 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-lg hover:shadow-green-400/50 text-base"
+                            >
+                                <FiMapPin className="inline mr-2"/> Suivre en Temps Réel
+                            </Link>
+                        ) : (
+                            <div className="p-4 bg-gray-100 rounded-lg flex items-center justify-center gap-3 text-gray-600">
+                                <p>{data.message || "Le suivi pour ce voyage est indisponible."}</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -102,62 +105,28 @@ const ColisWidget = () => {
     const [colis, setColis] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
-    const handleTrack = async (e) => {
-        e.preventDefault();
-        if (!code.trim()) return;
-        setLoading(true);
-        setError('');
-        setColis(null);
-        try {
-            const { data } = await api.get(`/public/colis/track/${code}`);
-            setColis(data);
-        } catch (err) {
-            setError(err.response?.data?.message || 'Colis introuvable.');
-        } finally {
-            setLoading(false);
-        }
-    };
-    
+    const handleTrack = async (e) => { e.preventDefault(); if (!code.trim()) return; setLoading(true); setError(''); setColis(null); try { const { data } = await api.get(`/public/colis/track/${code}`); setColis(data); } catch (err) { setError(err.response?.data?.message || 'Colis introuvable.'); } finally { setLoading(false); } };
     return (
         <div className="space-y-4">
             <p className="text-gray-600 text-sm">Avez-vous un code de suivi ? Vérifiez le statut de votre colis ici.</p>
             <form onSubmit={handleTrack} className="flex gap-2">
                 <input type="text" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().trim())} placeholder="Entrez un code de suivi..." className="flex-grow border p-2 rounded-md focus:ring-2 focus:ring-pink-400"/>
-                <button type="submit" disabled={loading} className="p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300">
-                    {loading ? <FiLoader className="animate-spin"/> : <FiSearch />}
-                </button>
+                <button type="submit" disabled={loading} className="p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300">{loading ? <FiLoader className="animate-spin"/> : <FiSearch />}</button>
             </form>
             {error && <p className="text-red-500 text-sm flex items-center gap-2"><FiXCircle/> {error}</p>}
-            {colis && (
-                <div className="p-4 rounded-lg border bg-gray-50 animate-fade-in">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="font-semibold">{colis.description}</p>
-                            <p className="text-xs text-gray-500 font-mono">{colis.code_suivi}</p>
-                        </div>
-                        <p className="font-bold text-blue-600">{colis.prix?.toLocaleString('fr-FR')} FCFA</p>
-                    </div>
-                    <div className="mt-4"><StatusStepper currentStatus={colis.statut} /></div>
-                </div>
-            )}
+            {colis && (<div className="p-4 rounded-lg border bg-gray-50 animate-fade-in"><div className="flex justify-between items-start"><div><p className="font-semibold">{colis.description}</p><p className="text-xs text-gray-500 font-mono">{colis.code_suivi}</p></div><p className="font-bold text-blue-600">{colis.prix?.toLocaleString('fr-FR')} FCFA</p></div><div className="mt-4"><StatusStepper currentStatus={colis.statut} /></div></div>)}
         </div>
     );
 };
 
 // --- WIDGET 4 : Historique des Voyages ---
 const PastTripsWidget = ({ trips }) => {
-    if (!trips || trips.length === 0) {
-        return <p className="text-center text-gray-400 py-4 text-sm">Aucun voyage passé trouvé.</p>;
-    }
+    if (!trips || trips.length === 0) return <p className="text-center text-gray-400 py-4 text-sm">Aucun voyage passé trouvé.</p>;
     return (
         <ul className="space-y-3 max-h-96 overflow-y-auto pr-2">
             {trips.slice(0, 5).map(trip => (
                 <li key={trip._id} className="flex justify-between items-center p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                    <div>
-                        <p className="font-medium text-sm">{trip.trajet.villeDepart} → {trip.trajet.villeArrivee}</p>
-                        <p className="text-xs text-gray-500">Le {new Date(trip.trajet.dateDepart).toLocaleDateString('fr-FR')}</p>
-                    </div>
+                    <div><p className="font-medium text-sm">{trip.trajet.villeDepart} → {trip.trajet.villeArrivee}</p><p className="text-xs text-gray-500">Le {new Date(trip.trajet.dateDepart).toLocaleDateString('fr-FR')}</p></div>
                     <FiCheckCircle className="text-green-500 text-xl"/>
                 </li>
             ))}
@@ -180,7 +149,7 @@ const ClientDashboardPage = () => {
                 .finally(() => { if (loading) setLoading(false); });
         };
         fetchData();
-        const interval = setInterval(fetchData, 30000); // Rafraîchit les données toutes les 30s
+        const interval = setInterval(fetchData, 30000);
         return () => clearInterval(interval);
     }, [loading]);
 
