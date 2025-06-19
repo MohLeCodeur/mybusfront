@@ -1,4 +1,5 @@
 // src/pages/admin/TrajetListPage.jsx
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
@@ -71,7 +72,6 @@ const TrajetListPage = () => {
         </Button>
       </div>
 
-      {/* --- CARTE AVEC BORDURE GRISE --- */}
       <Card className="shadow-xl border-t-4 border-gray-200">
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -81,10 +81,13 @@ const TrajetListPage = () => {
             </div>
             <div className="flex items-center gap-2">
                 <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }} className="border-gray-300 rounded-md text-sm p-2 bg-white">
-                    <option value="avenir">À venir</option><option value="passes">Passés</option><option value="tous">Tous</option>
+                    <option value="avenir">À venir</option>
+                    <option value="passes">Passés</option>
+                    <option value="tous">Tous</option>
                 </select>
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border-gray-300 rounded-md text-sm p-2 bg-white">
-                    <option value="date">Trier par Date</option><option value="price">Trier par Prix</option>
+                    <option value="date">Trier par Date</option>
+                    <option value="price">Trier par Prix</option>
                 </select>
             </div>
           </div>
@@ -93,60 +96,98 @@ const TrajetListPage = () => {
           {loading ? <div className="text-center p-8"><FiLoader className="animate-spin mx-auto text-3xl"/></div> :
            error ? <p className="text-red-500">{error}</p> :
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {currentTrajets.length > 0 ? currentTrajets.map(t => (
-              <div key={t._id} className="bg-white p-4 rounded-lg border hover:shadow-md transition-shadow flex flex-col justify-between">
-                  <div>
-                      <div className="flex justify-between items-start">
-                          <div className="font-bold text-gray-800 flex items-center gap-2"><FaRoute/> {t.villeDepart} → {t.villeArrivee}</div>
-                          <span className={`text-xs font-bold px-2 py-1 rounded-full ${t.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{t.isActive ? 'Actif' : 'Inactif'}</span>
-                      </div>
-                      <p className="text-sm text-gray-500 mt-1">{t.compagnie}</p>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-600 border-y my-3 py-2">
-                      <span className="flex items-center gap-1"><FiCalendar size={14}/> {new Date(t.dateDepart).toLocaleDateString('fr-FR')} - {t.heureDepart}</span>
-                      <span className="flex items-center gap-1 font-semibold"><FiDollarSign size={14}/> {t.prix.toLocaleString()} FCFA</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                      <p className="text-xs text-gray-500">Bus: <span className="font-semibold">{t.bus?.numero || 'Non assigné'}</span></p>
-                      <div className="flex gap-2">
-                          
-                          {/* --- LOGIQUE DU BOUTON "DÉMARRER" AMÉLIORÉE --- */}
-                          {t.isActive && (
-                            t.liveStatus === 'En cours' ? (
-                                <Button size="sm" className="bg-blue-100 text-blue-700 cursor-default" disabled><FiCheckCircle className="mr-1"/> En cours</Button>
-                            ) : t.liveStatus === 'Terminé' ? (
-                                <Button size="sm" className="bg-gray-100 text-gray-600 cursor-default" disabled><FiCheckCircle className="mr-1"/> Terminé</Button>
-                            ) : (
-                                <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => handleStartTrip(t._id)} title="Activer le suivi en direct"><FiPlayCircle/></Button>
-                            )
-                          )}
-                          <Button size="sm" variant="outline" onClick={() => navigate(`/admin/trajets/${t._id}/edit`)} title="Modifier"><FiEdit/></Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDelete(t._id, `${t.villeDepart} → ${t.villeArrivee}`)} title="Supprimer"><FiTrash2/></Button>
-                      </div>
-                  </div>
-              </div>
-            )) : <p className="col-span-full text-center py-10 text-gray-500">Aucun trajet ne correspond à vos filtres.</p>}
+            {currentTrajets.length > 0 ? currentTrajets.map(t => {
+                
+                // ====================================================================
+                // === DÉBUT DE LA LOGIQUE DE BOUTON MODIFIÉE
+                // ====================================================================
+                const getActionButtons = () => {
+                    // Combine la date et l'heure du trajet en un seul objet Date
+                    const departureDateTime = new Date(`${new Date(t.dateDepart).toISOString().split('T')[0]}T${t.heureDepart}`);
+                    // Calcule le nombre d'heures écoulées depuis le départ
+                    const hoursSinceDeparture = (new Date() - departureDateTime) / (1000 * 60 * 60);
+
+                    // Cas 1: Le voyage est marqué 'Terminé' dans la DB OU il est dans l'onglet "Passés" et plus de 12h se sont écoulées
+                    if (t.liveStatus === 'Terminé' || (statusFilter === 'passes' && hoursSinceDeparture > 12)) {
+                        return (
+                            <Button size="sm" className="bg-gray-100 text-gray-600 cursor-default" disabled>
+                                <FiCheckCircle className="mr-1"/> Terminé
+                            </Button>
+                        );
+                    }
+
+                    // Cas 2: Le voyage est activement suivi en temps réel
+                    if (t.liveStatus === 'En cours') {
+                        return (
+                            <Button size="sm" className="bg-blue-100 text-blue-700 cursor-default" disabled>
+                                <FiCheckCircle className="mr-1"/> En cours
+                            </Button>
+                        );
+                    }
+
+                    // Cas 3: Le voyage est dans le futur, actif, et peut être démarré
+                    if (t.isActive && statusFilter === 'avenir') {
+                         return (
+                            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => handleStartTrip(t._id)} title="Activer le suivi en direct">
+                                <FiPlayCircle className="mr-1"/> Démarrer
+                            </Button>
+                        );
+                    }
+                    
+                    // Cas par défaut : On n'affiche pas de bouton d'action principal (ex: voyage passé récent)
+                    return null;
+                };
+                // ====================================================================
+                // === FIN DE LA LOGIQUE DE BOUTON MODIFIÉE
+                // ====================================================================
+
+                return (
+                    <div key={t._id} className="bg-white p-4 rounded-lg border hover:shadow-md transition-shadow flex flex-col justify-between">
+                        <div>
+                            <div className="flex justify-between items-start">
+                                <div className="font-bold text-gray-800 flex items-center gap-2"><FaRoute/> {t.villeDepart} → {t.villeArrivee}</div>
+                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${t.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{t.isActive ? 'Actif' : 'Inactif'}</span>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-1">{t.compagnie}</p>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-600 border-y my-3 py-2">
+                            <span className="flex items-center gap-1"><FiCalendar size={14}/> {new Date(t.dateDepart).toLocaleDateString('fr-FR')} - {t.heureDepart}</span>
+                            <span className="flex items-center gap-1 font-semibold"><FiDollarSign size={14}/> {t.prix.toLocaleString()} FCFA</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <p className="text-xs text-gray-500">Bus: <span className="font-semibold">{t.bus?.numero || 'Non assigné'}</span></p>
+                            <div className="flex gap-2">
+                                {/* On appelle notre nouvelle fonction pour afficher le bouton d'action principal */}
+                                {getActionButtons()}
+                                
+                                {/* Les boutons Modifier et Supprimer sont toujours là */}
+                                <Button size="sm" variant="outline" onClick={() => navigate(`/admin/trajets/${t._id}/edit`)} title="Modifier"><FiEdit/></Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleDelete(t._id, `${t.villeDepart} → ${t.villeArrivee}`)} title="Supprimer"><FiTrash2/></Button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }) : <p className="col-span-full text-center py-10 text-gray-500">Aucun trajet ne correspond à vos filtres.</p>}
           </div>}
          </CardContent>
-               {/* --- NOUVELLE SECTION DE PAGINATION --- */}
-               {totalPages > 1 && (
-                   <CardFooter className="flex justify-between items-center">
-                       <span className="text-sm text-gray-500">
-                           Page {currentPage} sur {totalPages}
-                       </span>
-                       <div className="flex gap-2">
-                           <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>
-                               <FiChevronLeft className="h-4 w-4"/> Précédent
-                           </Button>
-                           <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>
-                               Suivant <FiChevronRight className="h-4 w-4"/>
-                           </Button>
-                       </div>
-                   </CardFooter>
-               )}
-               {/* ------------------------------------- */}
-             </Card>
+        {totalPages > 1 && (
+            <CardFooter className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">
+                    Page {currentPage} sur {totalPages}
+                </span>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>
+                        <FiChevronLeft className="h-4 w-4"/> Précédent
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>
+                        Suivant <FiChevronRight className="h-4 w-4"/>
+                    </Button>
+                </div>
+            </CardFooter>
+        )}
+      </Card>
     </div>
   );
 };
+
 export default TrajetListPage;
