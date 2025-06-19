@@ -5,38 +5,6 @@ import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { FiPlus, FiEdit, FiTrash2, FiLoader, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
-import StatusStepper from '../../components/admin/StatusStepper.jsx';
-
-// Composant pour une seule carte de colis
-const ColisCard = ({ colis, onDelete, onEdit }) => {
-    return (
-        <div className="bg-white p-4 rounded-lg border hover:shadow-lg transition-shadow duration-300 flex flex-col justify-between">
-            <div>
-                <div className="flex justify-between items-start mb-2">
-                    <div>
-                        <p className="text-xs text-gray-500">Code Suivi</p>
-                        <p className="font-bold font-mono text-blue-600">{colis.code_suivi}</p>
-                    </div>
-                    <p className="font-bold text-pink-600">{colis.prix?.toLocaleString('fr-FR')} FCFA</p>
-                </div>
-                <p className="text-sm font-semibold text-gray-800">{colis.description}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                    De: {colis.expediteur_nom} → Pour: {colis.destinataire_nom}
-                </p>
-                <div className="my-4">
-                    <StatusStepper currentStatus={colis.statut} />
-                </div>
-            </div>
-            <div className="border-t mt-2 pt-3 flex justify-between items-center">
-                <p className="text-xs text-gray-400">Enregistré le {new Date(colis.date_enregistrement).toLocaleDateString()}</p>
-                <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={onEdit} title="Gérer"><FiEdit/></Button>
-                    <Button size="sm" variant="destructive" onClick={onDelete} title="Supprimer"><FiTrash2/></Button>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const ColisDashboardPage = () => {
     const [allColis, setAllColis] = useState([]);
@@ -46,11 +14,10 @@ const ColisDashboardPage = () => {
 
     const [statusFilter, setStatusFilter] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 9;
+    const ITEMS_PER_PAGE = 10; // On peut afficher plus d'éléments dans un tableau
 
     const fetchColis = useCallback(() => {
         setLoading(true);
-        // On pourrait ajouter un filtre par statut à l'API si nécessaire
         api.get('/admin/colis')
           .then(res => setAllColis(Array.isArray(res.data) ? res.data : []))
           .catch(err => setError(err.response?.data?.message || 'Erreur serveur'))
@@ -67,6 +34,16 @@ const ColisDashboardPage = () => {
             } catch(err) {
                 alert("Erreur: " + err.response?.data?.message);
             }
+        }
+    };
+
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'enregistré': return 'bg-blue-100 text-blue-800';
+            case 'encours': return 'bg-yellow-100 text-yellow-800';
+            case 'arrivé': return 'bg-green-100 text-green-800';
+            case 'annulé': return 'bg-red-100 text-red-800';
+            default: return 'bg-gray-100 text-gray-800';
         }
     };
 
@@ -88,16 +65,18 @@ const ColisDashboardPage = () => {
                     <FiPlus className="mr-2" /> Enregistrer un Colis
                 </Button>
             </div>
-            <Card className="shadow-xl border-t-4 border-orange-400">
+            {/* --- CARTE AVEC BORDURE GRISE --- */}
+            <Card className="shadow-xl border-t-4 border-gray-200">
                 <CardHeader>
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <CardTitle>Liste des Colis ({filteredColis.length})</CardTitle>
+                            <CardDescription>Filtrez par statut pour affiner votre recherche.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                            <label htmlFor="status-filter" className="text-sm font-medium">Filtrer par statut:</label>
+                            <label htmlFor="status-filter" className="text-sm font-medium">Filtrer :</label>
                             <select id="status-filter" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }} className="border-gray-300 rounded-md text-sm p-2 bg-white">
-                                <option value="">Tous</option>
+                                <option value="">Tous les statuts</option>
                                 <option value="enregistré">Enregistrés</option>
                                 <option value="encours">En cours</option>
                                 <option value="arrivé">Arrivés</option>
@@ -109,15 +88,40 @@ const ColisDashboardPage = () => {
                 <CardContent>
                     {loading ? <div className="text-center p-8"><FiLoader className="animate-spin"/></div> :
                      error ? <p className="text-red-500">{error}</p> :
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {currentColis.length > 0 ? currentColis.map(c => (
-                            <ColisCard 
-                                key={c._id}
-                                colis={c}
-                                onEdit={() => navigate(`/admin/colis/${c._id}/edit`)}
-                                onDelete={() => handleDelete(c._id, c.code_suivi)}
-                            />
-                        )) : <p className="col-span-full text-center py-16 text-gray-500">Aucun colis ne correspond à vos filtres.</p>}
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left">Code Suivi</th>
+                                    <th className="px-6 py-3 text-left">Trajet</th>
+                                    <th className="px-6 py-3 text-left">Exp. → Dest.</th>
+                                    <th className="px-6 py-3 text-right">Prix</th>
+                                    <th className="px-6 py-3 text-center">Statut</th>
+                                    <th className="px-6 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {currentColis.length > 0 ? currentColis.map(c => (
+                                    <tr key={c._id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 font-mono text-blue-600">{c.code_suivi}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-500">{c.trajet ? `${c.trajet.villeDepart} → ${c.trajet.villeArrivee}` : 'N/A'}</td>
+                                        <td className="px-6 py-4 text-sm font-medium text-gray-800">{c.expediteur_nom} → {c.destinataire_nom}</td>
+                                        <td className="px-6 py-4 text-right font-semibold">{c.prix?.toLocaleString('fr-FR')} FCFA</td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(c.statut)}`}>{c.statut}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <Button size="sm" variant="outline" onClick={() => navigate(`/admin/colis/${c._id}/edit`)}><FiEdit/></Button>
+                                                <Button size="sm" variant="destructive" onClick={() => handleDelete(c._id, c.code_suivi)}><FiTrash2/></Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )) : (
+                                    <tr><td colSpan="6" className="text-center py-10">Aucun colis ne correspond à vos filtres.</td></tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>}
                 </CardContent>
                 {totalPages > 1 && (
