@@ -1,4 +1,8 @@
-@import "tailwindcss";
+/* src/index.css (NOUVEAU CODE CORRIGÉ) */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=Playfair+Display:wght@400..700&display=swap');
