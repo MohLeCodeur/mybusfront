@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card.jsx';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { FiSave, FiLoader } from 'react-icons/fi';
+import { FiSave, FiLoader, FiArrowLeft } from 'react-icons/fi';
 
 const ChauffeurFormPage = () => {
   const { id } = useParams();
@@ -21,22 +21,14 @@ const ChauffeurFormPage = () => {
     const loadData = async () => {
       try {
         const busResponse = await api.get('/admin/bus');
+        setBuses(Array.isArray(busResponse.data) ? busResponse.data : []);
         
-        // On vérifie que la réponse est un tableau et on le stocke
-        if (Array.isArray(busResponse.data)) {
-            setBuses(busResponse.data);
-        } else {
-            console.error("Format de réponse inattendu pour les bus:", busResponse.data);
-            setBuses([]); // Sécurité pour éviter un crash
-        }
-
         if (isEditMode) {
           const chauffeurRes = await api.get(`/admin/chauffeurs/${id}`);
           setFormData({ ...chauffeurRes.data, bus: chauffeurRes.data.bus?._id || '' });
         }
       } catch (err) {
         setError("Erreur de chargement des données.");
-        console.error(err);
       } finally {
         setFormLoading(false);
       }
@@ -65,47 +57,59 @@ const ChauffeurFormPage = () => {
     }
   };
 
-  if (formLoading) return <div>Chargement du formulaire...</div>;
+  if (formLoading) return <div className="flex justify-center items-center h-96"><FiLoader className="animate-spin text-3xl text-blue-500"/></div>;
 
   return (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader><CardTitle>{isEditMode ? 'Modifier le chauffeur' : 'Ajouter un nouveau chauffeur'}</CardTitle></CardHeader>
-      <CardContent>
-        {error && <p className="text-red-500 bg-red-50 p-3 rounded-lg mb-4">{error}</p>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-                <input name="prenom" value={formData.prenom} onChange={handleChange} placeholder="Prénom" required className="w-full border p-2 rounded-md" />
-                <input name="nom" value={formData.nom} onChange={handleChange} placeholder="Nom" required className="w-full border p-2 rounded-md" />
-            </div>
-          <input type="tel" name="telephone" value={formData.telephone} onChange={handleChange} placeholder="Téléphone" required className="w-full border p-2 rounded-md" />
-          
-          <div className="space-y-1">
-            <label htmlFor="bus-select" className="block font-medium text-sm text-gray-700">Affecter un bus (optionnel)</label>
-            <select id="bus-select" name="bus" value={formData.bus} onChange={handleChange} className="w-full border p-2 rounded-md bg-gray-50">
-                <option value="">— Aucun bus —</option>
-                {buses.length > 0 ? (
-                    buses.map(b => (
-                        <option key={b._id} value={b._id} disabled={b.etat !== 'en service'}>
-                            {b.numero} ({b.etat})
-                        </option>
-                    ))
-                ) : (
-                    <option disabled>Chargement des bus...</option>
-                )}
-            </select>
-            <p className="text-xs text-gray-500">Seuls les bus "en service" sont sélectionnables.</p>
-          </div>
-
-          <div className="flex justify-end gap-4 pt-4">
-            <Button type="button" variant="outline" onClick={() => navigate('/admin/chauffeurs')}>Annuler</Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? <FiLoader className="animate-spin mr-2" /> : <FiSave className="mr-2" />}
-              {isEditMode ? 'Mettre à jour' : 'Enregistrer'}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="max-w-2xl mx-auto">
+        <Button variant="outline" onClick={() => navigate('/admin/chauffeurs')} className="mb-6 flex items-center gap-2">
+            <FiArrowLeft/> Retour à la liste des chauffeurs
+        </Button>
+        <Card className="shadow-2xl border-t-4 border-pink-500">
+            <CardHeader>
+                <CardTitle>{isEditMode ? 'Modifier les Informations du Chauffeur' : 'Ajouter un Nouveau Chauffeur'}</CardTitle>
+                <CardDescription>
+                    {isEditMode ? `Mise à jour du profil de ${formData.prenom} ${formData.nom}` : "Remplissez les détails pour enregistrer un nouveau chauffeur."}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {error && <p className="text-red-500 bg-red-50 p-3 rounded-lg mb-4">{error}</p>}
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="prenom" className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+                            <input type="text" id="prenom" name="prenom" value={formData.prenom} onChange={handleChange} placeholder="Prénom du chauffeur" required className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                        </div>
+                        <div>
+                            <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                            <input type="text" id="nom" name="nom" value={formData.nom} onChange={handleChange} placeholder="Nom de famille" required className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-1">Numéro de Téléphone</label>
+                        <input type="tel" id="telephone" name="telephone" value={formData.telephone} onChange={handleChange} placeholder="Ex: 70000000" required className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                    </div>
+                    <div>
+                        <label htmlFor="bus" className="block text-sm font-medium text-gray-700 mb-1">Affecter un Bus (optionnel)</label>
+                        <select id="bus" name="bus" value={formData.bus} onChange={handleChange} className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="">— Aucun bus —</option>
+                            {buses.map(b => (
+                                <option key={b._id} value={b._id} disabled={b.etat !== 'en service'}>
+                                    {b.numero} ({b.etat})
+                                </option>
+                            ))}
+                        </select>
+                         <p className="text-xs text-gray-500 mt-1">Seuls les bus "en service" peuvent être affectés.</p>
+                    </div>
+                    <div className="flex justify-end pt-4">
+                        <Button type="submit" disabled={loading} className="px-8 py-3 bg-gradient-to-r from-pink-500 to-blue-500 text-white shadow-lg hover:shadow-blue-500/50">
+                            {loading ? <FiLoader className="animate-spin mr-2" /> : <FiSave className="mr-2" />}
+                            {isEditMode ? 'Enregistrer les modifications' : 'Ajouter le Chauffeur'}
+                        </Button>
+                    </div>
+                </form>
+            </CardContent>
+        </Card>
+    </div>
   );
 };
 export default ChauffeurFormPage;
