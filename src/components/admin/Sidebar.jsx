@@ -5,7 +5,7 @@ import { FiGrid, FiUsers, FiMap, FiPackage, FiCreditCard, FiLogOut, FiBarChart2 
 import { FaBus } from 'react-icons/fa';
 import AuthContext from '../../context/AuthContext';
 
-// Configuration des liens de navigation pour la barre latérale
+// Données des liens de navigation
 const navLinks = [
   { to: '/admin/dashboard', icon: <FiGrid />, label: 'Dashboard' },
   { to: '/admin/bus', icon: <FaBus />, label: 'Gestion des Bus' },
@@ -16,11 +16,12 @@ const navLinks = [
   { to: '/admin/stats', icon: <FiBarChart2 />, label: 'Statistiques' },
 ];
 
-// Composant interne réutilisable pour chaque lien de navigation
+// Composant interne pour chaque lien, gère le style actif/inactif
 const SidebarLink = ({ to, icon, label }) => {
-  const baseClasses = "flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200";
-  const inactiveClasses = "text-gray-600 hover:bg-gray-100 hover:text-gray-900";
-  const activeClasses = "bg-blue-600 text-white shadow-md";
+  const baseClasses = "flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out";
+  const inactiveClasses = "text-gray-500 hover:bg-blue-50 hover:text-blue-600";
+  // Le style actif utilise maintenant un dégradé subtil
+  const activeClasses = "bg-gradient-to-r from-pink-500 to-blue-500 text-white shadow-lg";
 
   return (
     <NavLink
@@ -33,48 +34,46 @@ const SidebarLink = ({ to, icon, label }) => {
   );
 };
 
-// Composant principal de la barre latérale
+// Composant principal de la Sidebar
 const Sidebar = () => {
     const { user, logout } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    // Fonction pour gérer la déconnexion
     const handleLogout = () => {
         logout();
-        navigate('/login'); // Redirige vers la page de connexion après déconnexion
+        navigate('/login');
     };
 
   return (
-    <aside className="w-64 bg-white h-screen shadow-lg flex flex-col sticky top-0">
+    <aside className="w-64 bg-white h-screen shadow-2xl flex flex-col sticky top-0 border-r border-gray-100">
       
-      {/* --- SECTION DU LOGO (AMÉLIORÉE) --- */}
-      <div className="p-4 border-b border-gray-200 flex justify-center items-center">
-        <NavLink to="/" className="group transition-transform duration-300 ease-in-out hover:scale-105">
+      {/* Section du Logo */}
+      <div className="p-6 border-b border-gray-100 flex justify-center items-center">
+        <Link to="/" className="group">
             <img 
               src="/assets/mybus.webp" 
               alt="MyBus Logo" 
-              className="h-20 w-auto object-contain" // h-20 pour augmenter la hauteur
+              className="h-16 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
             />
-        </NavLink>
+        </Link>
       </div>
-      {/* ---------------------------------- */}
       
       {/* Section des liens de navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-1">
+      <nav className="flex-1 px-4 py-6 space-y-2">
         {navLinks.map(link => (
           <SidebarLink key={link.to} {...link} />
         ))}
       </nav>
 
-      {/* Section inférieure avec les informations de l'utilisateur et la déconnexion */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="p-3 rounded-lg bg-gray-100">
-            <p className="text-sm font-semibold truncate" title={user?.prenom + ' ' + user?.nom}>{user?.prenom} {user?.nom}</p>
-            <p className="text-xs text-gray-500 truncate" title={user?.email}>{user?.email}</p>
+      {/* Section inférieure avec profil utilisateur et déconnexion */}
+      <div className="p-4 border-t border-gray-100">
+        <div className="p-3 rounded-lg bg-gray-50 text-center">
+            <p className="text-sm font-semibold text-gray-800 truncate">{user?.prenom} {user?.nom}</p>
+            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center mt-3 px-4 py-2 text-sm font-medium rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+          className="w-full flex items-center justify-center mt-3 px-4 py-2 text-sm font-medium rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
         >
           <FiLogOut className="mr-2" />
           Déconnexion
