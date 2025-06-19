@@ -68,10 +68,10 @@ const ChauffeurListPage = () => {
               <table className="min-w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left">Nom Complet</th>
-                    <th className="px-6 py-3 text-left">Téléphone</th>
-                    <th className="px-6 py-3 text-left">Bus Affecté</th>
-                    <th className="px-6 py-3 text-right">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom Complet</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus Affecté</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -79,7 +79,7 @@ const ChauffeurListPage = () => {
                     <tr key={ch._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 flex-shrink-0 bg-gray-100 rounded-full flex items-center justify-center">
+                          <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-gray-100 rounded-full">
                             <FiUser className="text-gray-500"/>
                           </div>
                           <div>
@@ -87,7 +87,7 @@ const ChauffeurListPage = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-600">{ch.telephone}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-600 font-mono">{ch.telephone}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {ch.bus ? (
                           <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
