@@ -12,7 +12,6 @@ const ChauffeurListPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // --- États pour la pagination ---
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 7;
 
@@ -37,7 +36,6 @@ const ChauffeurListPage = () => {
     }
   };
 
-  // --- Logique de pagination ---
   const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
   const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
   const currentChauffeurs = allChauffeurs.slice(indexOfFirstItem, indexOfLastItem);
@@ -55,7 +53,8 @@ const ChauffeurListPage = () => {
         </Button>
       </div>
 
-      <Card className="shadow-xl border-t-4 border-green-500">
+      {/* --- LIGNE CORRIGÉE : La bordure verte a été retirée --- */}
+      <Card className="shadow-xl">
         <CardHeader>
           <CardTitle>Liste des Chauffeurs ({allChauffeurs.length})</CardTitle>
           <CardDescription>Consultez la liste de tous les chauffeurs enregistrés.</CardDescription>
