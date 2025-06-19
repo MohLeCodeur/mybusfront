@@ -64,7 +64,7 @@ const RegisterPage = () => {
     <div className="flex-grow flex items-center justify-center p-4 bg-gradient-to-br from-pink-50 via-blue-50 to-white">
       <div className="bg-white shadow-2xl rounded-3xl p-8 md:p-12 w-full max-w-md">
         <h2 className="text-3xl font-extrabold text-center text-pink-600 mb-8 font-playfair">
-          Créer votre compte MyBus
+          Créer vun compte
         </h2>
         
         {error && <p className="text-red-600 bg-red-50 text-center p-3 rounded-lg mb-4">{error}</p>}
@@ -80,7 +80,7 @@ const RegisterPage = () => {
             name="telephone" 
             value={formData.telephone} 
             onChange={handleChange} 
-            placeholder="Téléphone (8 chiffres, optionnel)" 
+            placeholder="Téléphone (8 chiffres)" 
             className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none" 
           />
           <input type="password" name="mot_de_passe" value={formData.mot_de_passe} onChange={handleChange} placeholder="Mot de passe (8 caractères min.)" required className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-pink-400 outline-none" />
