@@ -4,7 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { FiSave, FiLoader, FiArrowLeft } from 'react-icons/fi';
+import { FiSave, FiLoader, FiTag, FiDollarSign, FiArrowLeft } from 'react-icons/fi';
+import StatusStepper from '../../components/admin/StatusStepper.jsx';
 
 const ColisFormPage = () => {
     const { id } = useParams();
@@ -17,6 +18,7 @@ const ColisFormPage = () => {
         destinataire_nom: '', destinataire_telephone: '',
         statut: 'enregistré'
     });
+    const [displayData, setDisplayData] = useState({ code_suivi: '', prix: 0, trajetInfo: null });
     const [trajets, setTrajets] = useState([]);
     const [loading, setLoading] = useState(false);
     const [formLoading, setFormLoading] = useState(true);
@@ -32,6 +34,7 @@ const ColisFormPage = () => {
                 if (isEditMode) {
                     const colisRes = await api.get(`/admin/colis/${id}`);
                     setFormData({ ...colisRes.data, trajet: colisRes.data.trajet?._id || '' });
+                    setDisplayData({ code_suivi: colisRes.data.code_suivi, prix: colisRes.data.prix, trajetInfo: colisRes.data.trajet });
                 }
             } catch (err) { setError("Erreur de chargement."); } 
             finally { setFormLoading(false); }
@@ -67,11 +70,12 @@ const ColisFormPage = () => {
         <Button variant="outline" onClick={() => navigate('/admin/colis')} className="mb-6 flex items-center gap-2">
             <FiArrowLeft/> Retour à la liste des colis
         </Button>
-        <Card className="shadow-2xl border-t-4 border-orange-400">
+        {/* --- LIGNE CORRIGÉE : border-orange-400 -> border-pink-500 --- */}
+        <Card className="shadow-2xl border-t-4 border-pink-500">
             <CardHeader>
                 <CardTitle>{isEditMode ? 'Gérer le Colis' : 'Enregistrer un Nouveau Colis'}</CardTitle>
                 <CardDescription>
-                    {isEditMode ? `Mise à jour pour le colis : ${formData.code_suivi || ''}` : "Remplissez les détails pour enregistrer un nouveau colis."}
+                    {isEditMode ? `Mise à jour des informations pour le colis ${formData.code_suivi || ''}` : "Remplissez les détails pour enregistrer un nouveau colis."}
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -80,7 +84,7 @@ const ColisFormPage = () => {
                     {isEditMode ? (
                         <div className="p-3 bg-gray-100 rounded-md text-sm">
                            <span className="font-semibold">Trajet Associé :</span> 
-                           <span className="text-blue-600 ml-2">{formData.trajet?.villeDepart} → {formData.trajet?.villeArrivee}</span>
+                           <span className="text-blue-600 ml-2">{displayData.trajetInfo ? `${displayData.trajetInfo.villeDepart} → ${displayData.trajetInfo.villeArrivee}` : 'N/A'}</span>
                         </div>
                     ) : (
                         <div>
