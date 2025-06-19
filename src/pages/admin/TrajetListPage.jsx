@@ -127,9 +127,25 @@ const TrajetListPage = () => {
               </div>
             )) : <p className="col-span-full text-center py-10 text-gray-500">Aucun trajet ne correspond à vos filtres.</p>}
           </div>}
-        </CardContent>
-        {totalPages > 1 && ( <CardFooter> {/* ... pagination ... */} </CardFooter> )}
-      </Card>
+         </CardContent>
+               {/* --- NOUVELLE SECTION DE PAGINATION --- */}
+               {totalPages > 1 && (
+                   <CardFooter className="flex justify-between items-center">
+                       <span className="text-sm text-gray-500">
+                           Page {currentPage} sur {totalPages}
+                       </span>
+                       <div className="flex gap-2">
+                           <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>
+                               <FiChevronLeft className="h-4 w-4"/> Précédent
+                           </Button>
+                           <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>
+                               Suivant <FiChevronRight className="h-4 w-4"/>
+                           </Button>
+                       </div>
+                   </CardFooter>
+               )}
+               {/* ------------------------------------- */}
+             </Card>
     </div>
   );
 };
