@@ -15,7 +15,7 @@ import AdminLayout from './layouts/AdminLayout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ClientProtectedRoute from './components/ClientProtectedRoute.jsx';
 import { FiLoader } from 'react-icons/fi';
-
+import PreloadManager from './components/PreloadManager.jsx';
 // ====================================================================
 // --- DÉBUT : LAZY LOADING DES PAGES ---
 // On utilise React.lazy pour ne charger le code de chaque page qu'au besoin.
@@ -71,6 +71,7 @@ function App() {
     <AuthProvider>
       <NotificationProvider>
         <BrowserRouter>
+          <PreloadManager /> 
           <ErrorBoundary>
             {/* Suspense est nécessaire pour utiliser React.lazy */}
             <Suspense fallback={<LoadingFallback />}>
