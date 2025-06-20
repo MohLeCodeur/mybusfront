@@ -1,16 +1,13 @@
-// src/pages/public/HomePage.jsx (VERSION DE DÉBOGAGE)
-
+// src/pages/public/HomePage.jsx
 import React from 'react';
 import Hero from '../../components/public/Hero';
 import FeatureCard from '../../components/public/FeatureCard';
-// import DestinationCarousel from '../../components/public/DestinationCarousel'; // <-- COMMENTÉ
-// import LiveMap from '../../components/public/LiveMap'; // <-- COMMENTÉ
+import DestinationCarousel from '../../components/public/DestinationCarousel';
+import LiveMap from '../../components/public/LiveMap';
 import { FiSmartphone, FiMapPin } from 'react-icons/fi';
 import { FaBoxOpen } from 'react-icons/fa';
 
 const HomePage = () => {
-  console.log("✅ [HomePage.jsx] Rendu en cours..."); // Log de débogage supplémentaire
-
   return (
     <div className="overflow-x-hidden bg-gray-50">
       <Hero />
@@ -46,10 +43,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* 
-      // ==========================================================
-      // === SECTION DU CARROUSEL MISE EN COMMENTAIRE POUR LE TEST ===
-      // ==========================================================
       <section id="destinations" className="py-24 bg-gradient-to-br from-white to-indigo-50">
         <div className="px-4 max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -63,12 +56,7 @@ const HomePage = () => {
           <DestinationCarousel />
         </div>
       </section>
-      */}
 
-      {/*
-      // ==========================================================
-      // === SECTION DE LA CARTE MISE EN COMMENTAIRE POUR LE TEST ===
-      // ==========================================================
       <section id="suivi" className="py-24 px-4 max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-playfair font-bold text-gray-800 mb-4">
@@ -80,13 +68,6 @@ const HomePage = () => {
         </div>
         <LiveMap />
       </section>
-      */}
-
-      {/* Ajoutons une section simple pour confirmer que la page se rend jusqu'au bout */}
-      <div className="text-center py-10 bg-gray-200">
-        <p>Test de rendu de fin de page.</p>
-      </div>
-
     </div>
   );
 };
