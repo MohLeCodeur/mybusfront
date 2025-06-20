@@ -21,7 +21,7 @@ import HomePage from './pages/public/HomePage.jsx';
 import SearchPage from './pages/public/SearchPage.jsx';
 import ContactPage from './pages/public/ContactPage.jsx';
 import PublicColisTrackingPage from './pages/public/PublicColisTrackingPage.jsx';
-// import ClientDashboardPage from './pages/public/ClientDashboardPage.jsx';
+import ClientDashboardPage from './pages/public/ClientDashboardPage.jsx';
 import ReservationPage from './pages/public/ReservationPage.jsx';
 import ConfirmationPage from './pages/public/ConfirmationPage.jsx';
 import PaymentFailedPage from './pages/public/PaymentFailedPage.jsx';
@@ -126,7 +126,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
-                {/* <Route path="/dashboard" element={<ClientProtectedRoute><ClientDashboardPage /></ClientProtectedRoute>} /> */}
+                <Route path="/dashboard" element={<ClientProtectedRoute><ClientDashboardPage /></ClientProtectedRoute>} />
                 <Route path="/reservation/:id" element={<ClientProtectedRoute><ReservationPage /></ClientProtectedRoute>} />
                 <Route path="/confirmation/:id" element={<ClientProtectedRoute><ConfirmationPage /></ClientProtectedRoute>} />
                 <Route path="/payment-failed" element={<ClientProtectedRoute><PaymentFailedPage /></ClientProtectedRoute>} />
