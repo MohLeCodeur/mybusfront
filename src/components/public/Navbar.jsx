@@ -1,4 +1,5 @@
-// src/components/public/Navbar.jsx
+// src/components/public/Navbar.jsx (CODE CORRIGÉ)
+
 import React, { useState, useContext, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiMenu, FiX, FiUser, FiLogOut, FiGrid, FiLayout, FiSearch, FiPackage, FiPhone, FiBell } from 'react-icons/fi';
@@ -21,12 +22,24 @@ const Navbar = () => {
     setIsNotifOpen(false);
   };
   
-  // Demander la permission pour les notifications natives du navigateur au chargement
+  // ==============================================================
+  // === DÉBUT DE LA CORRECTION
+  // ==============================================================
   useEffect(() => {
-    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-        Notification.requestPermission();
+    // On vérifie d'abord si l'API Notification existe dans le navigateur
+    if ('Notification' in window) {
+      // Si elle existe, on peut vérifier les permissions en toute sécurité
+      if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+          Notification.requestPermission();
+      }
+    } else {
+      // Optionnel : log pour savoir que l'API n'est pas supportée
+      console.warn("L'API de Notification du navigateur n'est pas supportée sur cet appareil.");
     }
   }, []);
+  // ==============================================================
+  // === FIN DE LA CORRECTION
+  // ==============================================================
 
   const navLinks = [
     { name: 'Réserver un Billet', path: '/search', icon: <FiSearch/> },
@@ -36,6 +49,8 @@ const Navbar = () => {
 
   const activeLinkStyle = { color: '#db2777', fontWeight: '600' };
 
+  // Le reste du composant (le JSX) est identique et n'a pas besoin de changer.
+  // ... (collez le reste de votre code JSX ici, il est déjà correct) ...
   return (
     <motion.nav
       initial={{ y: -100 }}
@@ -46,12 +61,10 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           
-          {/* LOGO (gauche) */}
           <div className="flex-shrink-0">
             <Link to="/"><img src="/assets/mybus.webp" alt="MyBus Logo" className="h-16 w-auto object-contain" /></Link>
           </div>
 
-          {/* LIENS DE NAVIGATION (centre) */}
           <div className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
               <NavLink key={link.name} to={link.path} className="font-medium text-gray-600 hover:text-pink-600 transition-colors flex items-center gap-2" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>
@@ -60,7 +73,6 @@ const Navbar = () => {
             ))}
           </div>
           
-          {/* ACTIONS UTILISATEUR (droite) */}
           <div className="hidden md:flex items-center gap-4">
             {user ? (
               <>
@@ -92,12 +104,10 @@ const Navbar = () => {
             )}
           </div>
           
-          {/* BOUTON MOBILE */}
           <div className="md:hidden"><button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 rounded-md text-gray-700">{isMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}</button></div>
         </div>
       </div>
 
-      {/* MENU MOBILE */}
       {isMenuOpen && (
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="md:hidden bg-white shadow-lg py-4 px-4 absolute w-full z-40">
             {navLinks.map((link) => <NavLink key={link.name} to={link.path} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">{link.icon} {link.name}</NavLink>)}

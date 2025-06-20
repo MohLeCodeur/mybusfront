@@ -1,4 +1,5 @@
-// src/context/NotificationContext.jsx
+// src/context/NotificationContext.jsx (CODE CORRIGÉ)
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { io } from 'socket.io-client';
 import AuthContext from './AuthContext';
@@ -29,10 +30,17 @@ export const NotificationProvider = ({ children }) => {
         if (socket) {
             socket.on('getNotification', (data) => {
                 setNotifications(prev => [data, ...prev]);
-                // Afficher une notification native du navigateur
-                if (Notification.permission === 'granted') {
+                
+                // ==============================================================
+                // === DÉBUT DE LA CORRECTION
+                // ==============================================================
+                // On vérifie que l'API existe ET que la permission a été accordée
+                if ('Notification' in window && Notification.permission === 'granted') {
                     new Notification(data.title, { body: data.message });
                 }
+                // ==============================================================
+                // === FIN DE LA CORRECTION
+                // ==============================================================
             });
         }
     }, [socket]);
