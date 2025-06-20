@@ -1,22 +1,22 @@
 // src/pages/public/SearchPage.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiLoader, FiSearch, FiFilter, FiX } from 'react-icons/fi';
+import { FiLoader, FiSearch, FiFilter, FiX, FiChevronDown } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useDebounce } from 'use-debounce';
-import { motion, AnimatePresence } from 'framer-motion'; // Pour une animation d'ouverture/fermeture fluide
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api';
 import TrajetCard from '../../components/public/TrajetCard.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 
-const LIMIT = 9; // Nombre de trajets par page
+const LIMIT = 9;
 
 const SearchPage = () => {
   const [filters, setFilters] = useState({ departure: '', arrival: '', date: '', company: '', sortBy: 'date' });
   const [debouncedCompany] = useDebounce(filters.company, 500);
   
-  // Nouvel état pour contrôler la visibilité des filtres sur mobile
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  // État pour contrôler la visibilité de l'accordéon sur mobile
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ docs: [], totalPages: 1, total: 0 });
@@ -61,56 +61,66 @@ const SearchPage = () => {
     setPage(1);
   };
 
-  // Le JSX des filtres, mis dans une variable pour ne pas le répéter
-  const filterInputs = (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end pt-4 lg:pt-0">
-        <select name="departure" value={filters.departure} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 bg-white">
-            <option value="">De (toutes villes)</option>
-            {meta.allCities.map(v => <option key={v} value={v}>{v}</option>)}
-        </select>
-        <select name="arrival" value={filters.arrival} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 bg-white">
-            <option value="">À (toutes villes)</option>
-            {meta.allCities.map(v => <option key={v} value={v}>{v}</option>)}
-        </select>
-        <input type="date" name="date" value={filters.date} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500" />
-        <input type="text" name="company" value={filters.company} onChange={handleFilterChange} placeholder="Compagnie..." className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500"/>
-        <Button onClick={handleReset} variant="outline" className="w-full py-3 flex items-center justify-center gap-2"><FiX/> Effacer</Button>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-white">
       {/* ======================================================= */}
-      {/* === Section des filtres - NOUVELLE VERSION ACCORDÉON === */}
+      {/* === Section des filtres - VERSION FINALE ET ROBUSTE === */}
       {/* ======================================================= */}
-      <section className="sticky top-20 z-20 bg-white/80 backdrop-blur-lg shadow-md p-6">
+      <section className="sticky top-20 z-20 bg-white/90 backdrop-blur-lg shadow-md p-4">
         <div className="max-w-7xl mx-auto">
-            {/* Version Desktop (et tablette) : filtres toujours visibles */}
-            <div className="hidden lg:block">
-                {filterInputs}
+            {/* Version Ordinateur (lg et plus grand) - filtres toujours visibles */}
+            <div className="hidden lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                <select name="departure" value={filters.departure} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 bg-white">
+                    <option value="">De (toutes villes)</option>
+                    {meta.allCities.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+                <select name="arrival" value={filters.arrival} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 bg-white">
+                    <option value="">À (toutes villes)</option>
+                    {meta.allCities.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+                <input type="date" name="date" value={filters.date} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500" />
+                <input type="text" name="company" value={filters.company} onChange={handleFilterChange} placeholder="Compagnie..." className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500"/>
+                <Button onClick={handleReset} variant="outline" className="w-full py-3 flex items-center justify-center gap-2"><FiX/> Effacer</Button>
             </div>
 
-            {/* Version Mobile : bouton pour afficher/cacher */}
+            {/* Version Mobile (plus petit que lg) - Accordéon */}
             <div className="lg:hidden">
-                <Button 
-                    onClick={() => setShowMobileFilters(prev => !prev)}
-                    className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
+                <button 
+                    onClick={() => setIsMobileFiltersOpen(prev => !prev)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-left bg-white border border-gray-200 rounded-lg shadow-sm"
                 >
-                    <FiFilter />
-                    {showMobileFilters ? "Masquer les filtres" : "Afficher les filtres"}
-                </Button>
+                    <span className="flex items-center gap-2 font-semibold text-gray-700">
+                        <FiFilter />
+                        Filtrer les résultats
+                    </span>
+                    <FiChevronDown 
+                        className={`transform transition-transform duration-300 ${isMobileFiltersOpen ? 'rotate-180' : ''}`} 
+                    />
+                </button>
 
-                {/* Conteneur animé pour les filtres mobiles */}
                 <AnimatePresence>
-                    {showMobileFilters && (
+                    {isMobileFiltersOpen && (
                         <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
+                            key="mobile-filters"
+                            initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                            animate={{ height: 'auto', opacity: 1, marginTop: '1rem' }}
+                            exit={{ height: 0, opacity: 0, marginTop: 0 }}
                             transition={{ duration: 0.3, ease: 'easeInOut' }}
                             className="overflow-hidden"
                         >
-                            {filterInputs}
+                            <div className="p-4 bg-gray-50 border rounded-lg space-y-4">
+                                <select name="departure" value={filters.departure} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 bg-white">
+                                    <option value="">De (toutes villes)</option>
+                                    {meta.allCities.map(v => <option key={v} value={v}>{v}</option>)}
+                                </select>
+                                <select name="arrival" value={filters.arrival} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 bg-white">
+                                    <option value="">À (toutes villes)</option>
+                                    {meta.allCities.map(v => <option key={v} value={v}>{v}</option>)}
+                                </select>
+                                <input type="date" name="date" value={filters.date} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500" />
+                                <input type="text" name="company" value={filters.company} onChange={handleFilterChange} placeholder="Compagnie..." className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500"/>
+                                <Button onClick={handleReset} variant="outline" className="w-full py-3 flex items-center justify-center gap-2"><FiX/> Effacer</Button>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
