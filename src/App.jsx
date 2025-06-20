@@ -111,7 +111,7 @@ function App() {
                   <Route path="reservations/:id/edit" element={<ReservationFormPage />} />
                   <Route path="colis" element={<ColisDashboardPage />} />
                   <Route path="colis/new" element={<ColisFormPage />} />
-                  <Route path="colis/:id/edit"={<ColisFormPage />} />
+                  <Route path="colis/:id/edit" element={<ColisFormPage />} />
                   <Route path="stats" element={<StatsPage />} />
                 </Route>
 
