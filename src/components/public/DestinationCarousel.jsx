@@ -10,10 +10,10 @@ import 'swiper/css/pagination';
 import 'swiper/css/effect-coverflow';
 
 const destinations = [
-  { id: 1, name: 'Bamako', description: 'La capitale animée et ses marchés colorés.', image: '/assets/destinations/bamako.png', price: 'Dès 5 000 FCFA' },
-  { id: 2, name: 'Sikasso', description: 'Le grenier du Mali et ses paysages verdoyants.', image: '/assets/destinations/sikasso.png', price: 'Dès 7 500 FCFA' },
-  { id: 3, name: 'Kayes', description: 'La ville aux sept collines au climat chaleureux.', image: '/assets/destinations/kayes.png', price: 'Dès 10 000 FCFA' },
-  { id: 4, name: 'Mopti', description: 'La « Venise » malienne au confluent du Niger.', image: '/assets/destinations/mopti.webp', price: 'Dès 8 000 FCFA' }
+  { id: 1, name: 'Bamako', description: 'La capitale animée et ses marchés colorés.', image: '/assets/destinations/bamako.jpg', price: 'Dès 5 000 FCFA' },
+  { id: 2, name: 'Sikasso', description: 'Le grenier du Mali et ses paysages verdoyants.', image: '/assets/destinations/sikasso.jpg', price: 'Dès 7 500 FCFA' },
+  { id: 3, name: 'Kayes', description: 'La ville aux sept collines au climat chaleureux.', image: '/assets/destinations/kayes.jpg', price: 'Dès 10 000 FCFA' },
+  { id: 4, name: 'Mopti', description: 'La « Venise » malienne au confluent du Niger.', image: '/assets/destinations/mopti.jpg', price: 'Dès 8 000 FCFA' }
 ];
 
 export default function DestinationCarousel() {

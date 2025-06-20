@@ -3,7 +3,7 @@ import { FiSmartphone, FiBox, FiMapPin, FiClock } from 'react-icons/fi'
 
 export default function Hero () {
   return (
-    <section className="relative h-screen w-full bg-[url('/assets/bus-hero.webp')] bg-cover bg-center">
+    <section className="relative h-screen w-full bg-[url('/assets/bus-hero.jpg')] bg-cover bg-center">
       {/* voile sombre très léger */}
       <div className="absolute inset-0 bg-black/60 sm:bg-black/50" />
 
