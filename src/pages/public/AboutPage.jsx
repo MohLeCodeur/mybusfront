@@ -1,74 +1,95 @@
 // src/pages/public/AboutPage.jsx
 
 import React from 'react';
-import { FiTarget, FiZap, FiUsers } from 'react-icons/fi';
+import { motion } from 'framer-motion';
+import { FiTarget, FiZap, FiUsers, FiCheckCircle } from 'react-icons/fi';
+
+// Variants pour les animations d'apparition
+const fadeInUp = {
+  initial: { opacity: 0, y: 40 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+};
+
+const stagger = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const FeatureCard = ({ icon, title, children }) => (
+  <motion.div variants={fadeInUp} className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
+    <div className="flex items-center gap-4 mb-4">
+      <div className="flex-shrink-0 h-14 w-14 flex items-center justify-center bg-gradient-to-br from-pink-500 to-blue-500 rounded-full text-white shadow-lg">
+        {icon}
+      </div>
+      <h3 className="text-2xl font-bold text-gray-800 font-playfair">{title}</h3>
+    </div>
+    <p className="text-gray-600 leading-relaxed">{children}</p>
+  </motion.div>
+);
 
 const AboutPage = () => {
   return (
-    <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        
-        {/* En-tête */}
-        <div className="text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 font-playfair">
-            À Propos de <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-blue-500">MyBus</span>
+    <div className="bg-gray-50/50">
+      {/* Section Hero */}
+      <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 text-white py-24 sm:py-32 px-4 text-center overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/assets/bus-hero.webp')] bg-cover bg-center opacity-10" />
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
+          <h1 className="text-4xl md:text-6xl font-extrabold font-playfair tracking-tight">
+            Notre Histoire
           </h1>
-          <p className="mt-4 text-xl text-gray-600">
-            Moderniser le transport au Mali, un voyage à la fois.
+          <p className="mt-6 max-w-3xl mx-auto text-xl text-indigo-200">
+            Transformer le transport au Mali grâce à l'innovation et la technologie.
           </p>
-        </div>
+        </motion.div>
+      </div>
 
-        {/* Notre Mission */}
-        <div className="mt-16 bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-          <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-            <FiTarget className="text-blue-500" /> Notre Mission
-          </h2>
-          <p className="text-lg text-gray-700 leading-relaxed">
-            Face aux défis du secteur du transport au Mali – gestion manuelle des réservations, absence de suivi en temps réel et organisation perfectible des colis – nous avons créé MyBus. Notre projet est né d'une ambition simple : développer une solution numérique centralisée pour révolutionner l'expérience des voyageurs et l'efficacité des compagnies de transport.
-          </p>
-          <p className="mt-4 text-lg text-gray-700 leading-relaxed">
-            MyBus vise à optimiser les opérations, à améliorer la transparence et à renforcer la qualité du service offert aux usagers. Nous croyons en un avenir où la réservation d'un billet, le suivi d'un bus ou l'envoi d'un colis se font en quelques clics, avec confiance et sérénité.
-          </p>
-        </div>
+      <div className="py-20 px-4 sm:px-6 lg:px-8">
+        <motion.div 
+          className="max-w-5xl mx-auto"
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          variants={stagger}
+        >
+          {/* Notre Mission */}
+          <FeatureCard icon={<FiTarget size={28} />} title="Notre Mission">
+            Face aux défis du secteur du transport au Mali – gestion manuelle, absence de suivi, organisation perfectible – nous avons créé MyBus. Notre ambition est simple : développer une solution numérique centralisée pour révolutionner l'expérience des voyageurs et l'efficacité des compagnies. Nous visons à optimiser les opérations, améliorer la transparence et renforcer la qualité du service.
+          </FeatureCard>
 
-        {/* Nos Valeurs */}
-        <div className="mt-12">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-10">Nos Engagements</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            
-            <div className="p-6">
-              <div className="flex items-center justify-center h-16 w-16 mx-auto bg-blue-100 rounded-full">
-                <FiZap className="text-3xl text-blue-600" />
-              </div>
-              <h3 className="mt-5 text-xl font-semibold text-gray-900">Efficacité</h3>
-              <p className="mt-2 text-gray-600">
-                Automatiser les processus pour réduire les erreurs humaines, diminuer les temps d'attente et garantir une ponctualité améliorée grâce au suivi GPS.
-              </p>
-            </div>
-            
-            <div className="p-6">
-              <div className="flex items-center justify-center h-16 w-16 mx-auto bg-pink-100 rounded-full">
-                <FiUsers className="text-3xl text-pink-600" />
-              </div>
-              <h3 className="mt-5 text-xl font-semibold text-gray-900">Satisfaction Client</h3>
-              <p className="mt-2 text-gray-600">
-                Offrir une interface simple, accessible et des informations fiables pour que chaque voyageur et expéditeur de colis ait une visibilité complète et une expérience positive.
-              </p>
-            </div>
-            
-            <div className="p-6">
-              <div className="flex items-center justify-center h-16 w-16 mx-auto bg-green-100 rounded-full">
-                 <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.49A10.019 10.019 0 0112 2a10 10 0 0110 10c0 3.142-1.44 5.962-3.704 7.795a.75.75 0 00-.518.695v.618a.75.75 0 01-.75.75H6.622a.75.75 0 01-.75-.75v-.618a.75.75 0 00-.518-.695A10.019 10.019 0 012 12c0-4.963 3.53-9.064 8.205-9.882a.75.75 0 01.813.687z" /></svg>
-              </div>
-              <h3 className="mt-5 text-xl font-semibold text-gray-900">Fiabilité et Sécurité</h3>
-              <p className="mt-2 text-gray-600">
-                Garantir la robustesse de notre système grâce à des technologies éprouvées (Node.js, React, MongoDB) et sécuriser les transactions via des partenaires de paiement reconnus.
-              </p>
-            </div>
-            
+          <hr className="my-16 border-dashed border-gray-300" />
+          
+          {/* Nos Engagements */}
+          <div className="text-center mb-12">
+            <motion.h2 variants={fadeInUp} className="text-3xl md:text-4xl font-bold font-playfair text-gray-800">Nos Engagements</motion.h2>
           </div>
-        </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <FeatureCard icon={<FiZap size={28} />} title="Efficacité et Fiabilité">
+              Automatiser les processus pour réduire les erreurs, diminuer les temps d'attente et garantir une ponctualité améliorée grâce au suivi GPS précis et à une plateforme robuste.
+            </FeatureCard>
+            <FeatureCard icon={<FiUsers size={28} />} title="Centré sur l'Utilisateur">
+              Offrir une interface simple et accessible, des informations fiables et une visibilité complète pour que chaque voyageur et expéditeur de colis vive une expérience positive et sereine.
+            </FeatureCard>
+          </div>
 
+          <hr className="my-16 border-dashed border-gray-300" />
+
+          {/* Pourquoi nous choisir */}
+          <motion.div variants={fadeInUp} className="bg-gradient-to-br from-pink-500 to-blue-600 text-white p-10 rounded-3xl shadow-2xl">
+              <h2 className="text-3xl font-bold font-playfair mb-4">La promesse MyBus</h2>
+              <p className="text-lg text-pink-100/90 leading-relaxed">
+                  Chaque fonctionnalité de MyBus a été conçue en pensant à vous. De la réservation instantanée à la tranquillité d'esprit que procure le suivi en temps réel, nous nous engageons à rendre vos voyages plus simples, plus sûrs et plus agréables.
+              </p>
+              <ul className="mt-6 space-y-2">
+                  <li className="flex items-center gap-3"><FiCheckCircle/> Paiements mobiles sécurisés.</li>
+                  <li className="flex items-center gap-3"><FiCheckCircle/> Suivi GPS précis de votre bus.</li>
+                  <li className="flex items-center gap-3"><FiCheckCircle/> Gestion transparente des colis.</li>
+              </ul>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );
