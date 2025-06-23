@@ -1,177 +1,191 @@
-// src/pages/admin/TrajetListPage.jsx
+// src/pages/admin/TrajetListPage.jsx (CODE COMPLET ET CORRIGÉ)
 
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { FaPlus, FaBus, FaPlay, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaArrowRight, FaEdit, FaTrash } from 'react-icons/fa';
-import { getAllTrajets, deleteTrajet, updateTrajet } from '../../api';
-import { useNotification } from '../../context/NotificationContext';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../../api';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/Card.jsx';
+import { Button } from '../../components/ui/Button.jsx';
+import { FiPlus, FiEdit, FiTrash2, FiLoader, FiPlayCircle, FiChevronLeft, FiChevronRight, FiCalendar, FiDollarSign, FiCheckCircle } from 'react-icons/fi';
+import { FaRoute } from 'react-icons/fa';
 
 const TrajetListPage = () => {
-  const [trajets, setTrajets] = useState([]);
+  const [allTrajets, setAllTrajets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('aVenir');
-  const { addNotification } = useNotification();
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const [statusFilter, setStatusFilter] = useState('avenir');
+  const [sortBy, setSortBy] = useState('date');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 8;
+
+  const fetchTrajets = useCallback(() => {
+    setLoading(true);
+    // Le tri est maintenant géré par le backend, on peut simplifier ici.
+    api.get(`/admin/trajets?status=${statusFilter}`)
+      .then(res => setAllTrajets(Array.isArray(res.data) ? res.data : []))
+      .catch(err => setError(err.response?.data?.message || 'Erreur serveur'))
+      .finally(() => setLoading(false));
+  }, [statusFilter]);
 
   useEffect(() => {
-    const fetchTrajets = async () => {
-      try {
-        const data = await getAllTrajets();
-        setTrajets(data.sort((a, b) => new Date(a.dateDepart) - new Date(b.dateDepart)));
-      } catch (error) {
-        addNotification('Erreur lors de la récupération des trajets', 'error');
-        console.error("Erreur API:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchTrajets();
-  }, [addNotification]);
-  
-  const handleDelete = async (id) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce trajet ?")) {
-      try {
-        await deleteTrajet(id);
-        setTrajets(trajets.filter(t => t._id !== id));
-        addNotification('Trajet supprimé avec succès', 'success');
-      } catch (error) {
-        addNotification('Erreur lors de la suppression du trajet', 'error');
-      }
+  }, [fetchTrajets]);
+
+  const handleDelete = async (id, nomTrajet) => {
+    if (window.confirm(`Supprimer le trajet ${nomTrajet} ?`)) {
+      await api.delete(`/admin/trajets/${id}`);
+      fetchTrajets();
     }
   };
 
-  const handleStartTrajet = async (id) => {
+  const handleStartTrip = async (trajetId) => {
     try {
-      const updatedTrajet = await updateTrajet(id, { statut: 'en cours' });
-      setTrajets(trajets.map(t => t._id === id ? { ...t, statut: 'en cours' } : t));
-      addNotification('Le trajet a démarré !', 'success');
-    } catch (error) {
-      addNotification('Erreur lors du démarrage du trajet', 'error');
+      await api.post('/tracking/start-trip', { trajetId });
+      alert("Voyage démarré avec succès ! Le suivi est maintenant actif.");
+      fetchTrajets();
+    } catch (err) {
+      alert("Erreur: " + (err.response?.data?.message || "Impossible de démarrer le voyage."));
     }
   };
 
-  const handleFinishTrajet = async (id) => {
-    try {
-      await updateTrajet(id, { statut: 'terminé' });
-      setTrajets(trajets.map(t => t._id === id ? { ...t, statut: 'terminé' } : t));
-      addNotification('Le trajet est terminé.', 'info');
-    } catch (error) {
-      addNotification('Erreur lors de la finalisation du trajet', 'error');
-    }
-  };
-
-  // --- NOUVELLE LOGIQUE DE TRI AMÉLIORÉE ---
-  const now = new Date();
-
-  const { aVenir, enCours, passes } = trajets.reduce((acc, trajet) => {
-    const dateDepart = new Date(trajet.dateDepart);
-
-    if (trajet.statut === 'terminé' || trajet.statut === 'annulé') {
-        acc.passes.push(trajet);
-    } else if (trajet.statut === 'en cours') {
-        acc.enCours.push(trajet);
-    } else if (trajet.statut === 'en attente') {
-        // Si la date de départ est strictement dans le futur
-        if (dateDepart > now) {
-            acc.aVenir.push(trajet);
-        } else {
-            // Si la date de départ est passée mais qu'il est "en attente",
-            // il est considéré comme un trajet passé qui nécessite une action.
-            acc.passes.push(trajet);
-        }
-    }
-    return acc;
-  }, { aVenir: [], enCours: [], passes: [] });
+  // La logique de tri frontend peut être simplifiée si le backend le fait déjà
+  const sortedTrajets = useMemo(() => {
+    return [...allTrajets].sort((a, b) => {
+      if (sortBy === 'price') return a.prix - b.prix;
+      // Le backend trie déjà par date, mais on peut garder ce tri client par sécurité.
+      const dateA = new Date(a.dateDepart);
+      const dateB = new Date(b.dateDepart);
+      return statusFilter === 'passes' ? dateB - dateA : dateA - dateB;
+    });
+  }, [allTrajets, sortBy, statusFilter]);
   
-  const renderTrajetList = (list) => {
-    if (list.length === 0) {
-      return <p className="text-center text-gray-500 py-8">Aucun trajet dans cette catégorie.</p>;
-    }
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {list.map(trajet => (
-          <motion.div
-            key={trajet._id}
-            className="bg-white rounded-lg shadow-md overflow-hidden transform hover:scale-105 transition-transform duration-300"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="p-5">
-              <div className="flex justify-between items-start">
-                  <h3 className="text-xl font-bold text-gray-800">{trajet.depart} <FaArrowRight className="inline mx-2" /> {trajet.destination}</h3>
-                  <span className={`text-sm font-semibold px-2 py-1 rounded-full ${
-                      trajet.statut === 'en attente' ? 'bg-yellow-200 text-yellow-800' :
-                      trajet.statut === 'en cours' ? 'bg-blue-200 text-blue-800' :
-                      'bg-gray-200 text-gray-800'
-                  }`}>
-                      {trajet.statut}
-                  </span>
-              </div>
-              <p className="text-gray-600 mt-2">
-                {format(new Date(trajet.dateDepart), 'eeee dd MMMM yyyy \'à\' HH:mm', { locale: fr })}
-              </p>
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <p><strong>Bus:</strong> {trajet.bus?.nom || 'N/A'} ({trajet.bus?.immatriculation || 'N/A'})</p>
-                <p><strong>Chauffeur:</strong> {trajet.chauffeur?.nom || 'N/A'}</p>
-                <p><strong>Prix:</strong> {trajet.prix} FCFA</p>
-                <p><strong>Places restantes:</strong> {trajet.placesDisponibles}</p>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2 justify-end">
-                {/* --- LOGIQUE DU BOUTON CORRIGÉE --- */}
-                {trajet.statut === 'en attente' && new Date(trajet.dateDepart) <= now && (
-                    <button onClick={() => handleStartTrajet(trajet._id)} className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-3 rounded">
-                        <FaPlay /> Démarrer
-                    </button>
-                )}
-                {trajet.statut === 'en cours' && (
-                    <button onClick={() => handleFinishTrajet(trajet._id)} className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded">
-                        <FaCheckCircle /> Terminer
-                    </button>
-                )}
-                 <Link to={`/admin/trajets/edit/${trajet._id}`} className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-3 rounded">
-                    <FaEdit /> Modifier
-                </Link>
-                <button onClick={() => handleDelete(trajet._id)} className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded">
-                    <FaTrash /> Supprimer
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    );
-  };
-  
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div></div>;
-  }
+  const currentTrajets = sortedTrajets.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(sortedTrajets.length / ITEMS_PER_PAGE);
 
   return (
-    <div className="container mx-auto p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Gestion des Trajets</h1>
-        <Link to="/admin/trajets/new" className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
-          <FaPlus /> Nouveau Trajet
-        </Link>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+            <h1 className="text-3xl font-bold">Planification des Trajets</h1>
+            <p className="text-gray-500 mt-1">Gérez les itinéraires et lancez les voyages.</p>
+        </div>
+        <Button onClick={() => navigate('/admin/trajets/new')} className="bg-gradient-to-r from-pink-500 to-blue-500 text-white shadow-lg">
+          <FiPlus className="mr-2" /> Créer un Trajet
+        </Button>
       </div>
 
-      <div className="mb-6">
-          <div className="flex border-b border-gray-300">
-              <button onClick={() => setActiveTab('aVenir')} className={`py-2 px-4 text-lg font-medium ${activeTab === 'aVenir' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500'}`}>À venir ({aVenir.length})</button>
-              <button onClick={() => setActiveTab('enCours')} className={`py-2 px-4 text-lg font-medium ${activeTab === 'enCours' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}>En cours ({enCours.length})</button>
-              <button onClick={() => setActiveTab('passes')} className={`py-2 px-4 text-lg font-medium ${activeTab === 'passes' ? 'border-b-2 border-gray-500 text-gray-600' : 'text-gray-500'}`}>Passés & Archivés ({passes.length})</button>
+      <Card className="shadow-xl border-t-4 border-gray-200">
+        <CardHeader>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <CardTitle>Liste des Trajets ({sortedTrajets.length})</CardTitle>
+              <CardDescription>Filtrez et triez pour organiser vos voyages.</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+                <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }} className="border-gray-300 rounded-md text-sm p-2 bg-white">
+                    <option value="avenir">À venir</option>
+                    <option value="passes">Passés</option>
+                    <option value="tous">Tous</option>
+                </select>
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border-gray-300 rounded-md text-sm p-2 bg-white">
+                    <option value="date">Trier par Date</option>
+                    <option value="price">Trier par Prix</option>
+                </select>
+            </div>
           </div>
-      </div>
-      
-      <div>
-          {activeTab === 'aVenir' && renderTrajetList(aVenir)}
-          {activeTab === 'enCours' && renderTrajetList(enCours)}
-          {activeTab === 'passes' && renderTrajetList(passes)}
-      </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? <div className="text-center p-8"><FiLoader className="animate-spin mx-auto text-3xl"/></div> :
+           error ? <p className="text-red-500">{error}</p> :
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {currentTrajets.length > 0 ? currentTrajets.map(t => {
+                
+                // ====================================================================
+                // === DÉBUT DE LA LOGIQUE DE BOUTON CORRIGÉE ET SIMPLIFIÉE
+                // ====================================================================
+                const getActionButtons = () => {
+                    const departureDateTime = new Date(`${new Date(t.dateDepart).toISOString().split('T')[0]}T${t.heureDepart}`);
+                    const now = new Date();
+                    const hoursSinceDeparture = (now - departureDateTime) / (1000 * 60 * 60);
 
+                    // Cas 1 : Voyage terminé (statut ou temps écoulé)
+                    if (t.liveStatus === 'Terminé' || hoursSinceDeparture > 12) {
+                        return (
+                            <Button size="sm" className="bg-gray-100 text-gray-600 cursor-default" disabled>
+                                <FiCheckCircle className="mr-1"/> Terminé
+                            </Button>
+                        );
+                    }
+
+                    // Cas 2 : Voyage en cours de suivi
+                    if (t.liveStatus === 'En cours') {
+                        return (
+                            <Button size="sm" className="bg-blue-100 text-blue-700 cursor-default" disabled>
+                                <FiCheckCircle className="mr-1"/> En cours
+                            </Button>
+                        );
+                    }
+
+                    // Cas 3 : Le départ est dans le futur (ou n'est pas encore passé aujourd'hui)
+                    // ET le trajet est actif. C'est la seule condition pour voir "Démarrer".
+                    if (departureDateTime > now && t.isActive) {
+                        return (
+                            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => handleStartTrip(t._id)} title="Activer le suivi en direct">
+                                <FiPlayCircle className="mr-1"/> Démarrer
+                            </Button>
+                        );
+                    }
+                    
+                    // Cas par défaut : On n'affiche rien (ex: un trajet passé récent sans suivi)
+                    return null;
+                };
+                // ====================================================================
+                // === FIN DE LA LOGIQUE DE BOUTON
+                // ====================================================================
+
+                return (
+                    <div key={t._id} className="bg-white p-4 rounded-lg border hover:shadow-md transition-shadow flex flex-col justify-between">
+                        <div>
+                            <div className="flex justify-between items-start">
+                                <div className="font-bold text-gray-800 flex items-center gap-2"><FaRoute/> {t.villeDepart} → {t.villeArrivee}</div>
+                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${t.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{t.isActive ? 'Actif' : 'Inactif'}</span>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-1">{t.compagnie}</p>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-600 border-y my-3 py-2">
+                            <span className="flex items-center gap-1"><FiCalendar size={14}/> {new Date(t.dateDepart).toLocaleDateString('fr-FR')} - {t.heureDepart}</span>
+                            <span className="flex items-center gap-1 font-semibold"><FiDollarSign size={14}/> {t.prix.toLocaleString()} FCFA</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <p className="text-xs text-gray-500">Bus: <span className="font-semibold">{t.bus?.numero || 'Non assigné'}</span></p>
+                            <div className="flex gap-2">
+                                {getActionButtons()}
+                                <Button size="sm" variant="outline" onClick={() => navigate(`/admin/trajets/${t._id}/edit`)} title="Modifier"><FiEdit/></Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleDelete(t._id, `${t.villeDepart} → ${t.villeArrivee}`)} title="Supprimer"><FiTrash2/></Button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }) : <p className="col-span-full text-center py-10 text-gray-500">Aucun trajet ne correspond à vos filtres.</p>}
+          </div>}
+         </CardContent>
+        {totalPages > 1 && (
+            <CardFooter className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">
+                    Page {currentPage} sur {totalPages}
+                </span>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>
+                        <FiChevronLeft className="h-4 w-4"/> Précédent
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>
+                        Suivant <FiChevronRight className="h-4 w-4"/>
+                    </Button>
+                </div>
+            </CardFooter>
+        )}
+      </Card>
     </div>
   );
 };
