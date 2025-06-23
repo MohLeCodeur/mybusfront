@@ -1,59 +1,73 @@
-// src/pages/public/ClientDashboardPage.jsx (CODE COMPLET ET AMÉLIORÉ)
+// src/pages/public/ClientDashboardPage.jsx (NOUVELLE VERSION AMÉLIORÉE)
 
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
 import AuthContext from '../../context/AuthContext';
-import { FiClock, FiMapPin, FiBox, FiLoader, FiCheckCircle, FiArchive, FiPlusCircle, FiSearch, FiXCircle, FiCalendar, FiSend } from 'react-icons/fi';
-import StatusStepper from '../../components/admin/StatusStepper.jsx';
+import { FiClock, FiMapPin, FiLoader, FiCheckCircle, FiArchive, FiPlusCircle, FiCalendar, FiSend, FiTrendingUp, FiAward, FiStar } from 'react-icons/fi';
 
 // ==================================================================
-// WIDGETS INTERNES (Légèrement modifiés ou nouveaux)
+// WIDGETS INTERNES (Redésignés et Nouveaux)
 // ==================================================================
 
-// --- WIDGET 1 : Compte à rebours (inchangé) ---
+// --- WIDGET 1 : Compte à rebours (design amélioré) ---
 const CountdownDisplay = ({ targetDateTime }) => {
-    // ... (le code de ce composant reste identique)
     const [timeLeft, setTimeLeft] = useState(targetDateTime.getTime() - new Date().getTime());
     useEffect(() => { if (timeLeft <= 0) return; const timerId = setTimeout(() => { setTimeLeft(timeLeft - 1000); }, 1000); return () => clearTimeout(timerId); }, [timeLeft]);
-    if (timeLeft <= 0) { return <span className="text-lg font-bold text-green-500 animate-pulse">Départ imminent !</span>; }
-    const formatTime = (v, l) => (<div className="text-center w-16"><span className="text-3xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-500 to-blue-500">{String(v).padStart(2, '0')}</span><span className="block text-xs uppercase text-gray-500 tracking-wider">{l}</span></div>);
+    
+    if (timeLeft <= 0) {
+        return (
+            <div className="text-center">
+                <p className="text-2xl font-bold text-green-500 animate-pulse">Départ imminent !</p>
+                <p className="text-sm text-gray-500">Préparez-vous pour votre voyage.</p>
+            </div>
+        );
+    }
+    
     const d = Math.floor(timeLeft / (36e5 * 24)), h = Math.floor((timeLeft / 36e5) % 24), m = Math.floor((timeLeft / 6e4) % 60), s = Math.floor((timeLeft / 1e3) % 60);
-    return (<div className="flex justify-center gap-2 sm:gap-4">{d > 0 && formatTime(d, 'Jours')}{ (d > 0 || h > 0) && formatTime(h, 'Heures')}{(d > 0 || h > 0 || m > 0) && formatTime(m, 'Minutes')}{formatTime(s, 'Secondes')}</div>);
+    const formatTime = (v, l) => (<div className="text-center w-16"><div className="text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-500 to-blue-500">{String(v).padStart(2, '0')}</div><div className="text-xs uppercase text-gray-400 tracking-wider mt-1">{l}</div></div>);
+    
+    return (<div className="flex justify-center gap-2 sm:gap-4">{d > 0 && formatTime(d, 'Jours')}{(d > 0 || h > 0) && formatTime(h, 'Heures')}{(d > 0 || h > 0 || m > 0) && formatTime(m, 'Minutes')}{formatTime(s, 'Secondes')}</div>);
 };
 
-// --- WIDGET 2 : Carte de Voyage (Réutilisable) ---
+// --- WIDGET 2 : Carte de Voyage (design amélioré) ---
 const TripCard = ({ reservation }) => {
     if (!reservation?.trajet) return null;
     const { trajet } = reservation;
     const isFuture = new Date(`${new Date(trajet.dateDepart).toISOString().split('T')[0]}T${trajet.heureDepart}:00Z`) > new Date();
 
     return (
-        <li className="flex flex-col sm:flex-row justify-between items-start gap-4 p-4 border rounded-lg hover:bg-gray-50/80 hover:shadow-sm transition-all">
-            <div className="flex-grow">
-                <p className="font-bold text-gray-800">{trajet.villeDepart} → {trajet.villeArrivee}</p>
-                <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                    <span className="flex items-center gap-1.5"><FiCalendar size={13}/> {new Date(trajet.dateDepart).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span>
-                    <span className="flex items-center gap-1.5"><FiClock size={13}/> {trajet.heureDepart}</span>
+        <li className="flex flex-col sm:flex-row justify-between items-start gap-4 p-4 border rounded-xl hover:bg-gradient-to-r hover:from-pink-50/50 hover:to-blue-50/50 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div className="flex items-center gap-4 flex-grow">
+                <div className={`shrink-0 h-12 w-12 rounded-lg flex flex-col items-center justify-center ${isFuture ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                    <span className="text-xs font-bold">{new Date(trajet.dateDepart).toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase()}</span>
+                    <span className="text-lg font-bold">{new Date(trajet.dateDepart).getDate()}</span>
+                </div>
+                <div>
+                    <p className="font-bold text-gray-800">{trajet.villeDepart} → {trajet.villeArrivee}</p>
+                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                        <span className="flex items-center gap-1.5"><FiClock size={13}/> {trajet.heureDepart}</span>
+                    </div>
                 </div>
             </div>
             {isFuture ? (
-                 <Link to="/search" className="shrink-0 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full hover:bg-blue-200">Voir détails</Link>
+                 <span className="shrink-0 mt-2 sm:mt-0 flex items-center gap-1.5 px-3 py-1 bg-pink-100 text-pink-700 text-xs font-semibold rounded-full"><FiSend size={13}/> À venir</span>
             ) : (
-                <span className="flex items-center gap-1.5 shrink-0 px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full"><FiCheckCircle size={13}/> Terminé</span>
+                <span className="shrink-0 mt-2 sm:mt-0 flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full"><FiCheckCircle size={13}/> Terminé</span>
             )}
         </li>
     );
 };
 
-// --- WIDGET 3 : Voyage à la Une (Amélioré) ---
+// --- WIDGET 3 : Voyage à la Une (design amélioré) ---
 const FeaturedTripWidget = ({ data }) => {
     if (!data || !data.reservation) {
         return (
-            <div className="text-center p-8 bg-gray-50/50 rounded-lg">
-                <p className="text-gray-600 mb-4">Vous n'avez aucun voyage à venir.</p>
+            <div className="text-center p-8 bg-gradient-to-br from-pink-50 via-blue-50 to-white rounded-2xl flex flex-col items-center justify-center h-full">
+                <FiMapPin className="text-5xl text-blue-300 mb-4"/>
+                <p className="text-gray-600 mb-4 font-semibold">Vous n'avez aucun voyage programmé.</p>
                 <Link to="/search" className="inline-block px-6 py-2 bg-gradient-to-r from-pink-500 to-blue-500 text-white font-semibold rounded-lg hover:shadow-lg transition">
-                    Réserver un voyage
+                    Réserver mon premier voyage
                 </Link>
             </div>
         );
@@ -64,39 +78,56 @@ const FeaturedTripWidget = ({ data }) => {
     const isFuture = departureDateTime > new Date();
 
     return (
-        <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+        <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 h-full flex flex-col">
             <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                    <div>
-                        <p className="text-sm font-semibold text-blue-600">{isFuture ? "Prochain Voyage" : "Voyage en Cours / Récent"}</p>
-                        <h3 className="font-bold text-2xl text-gray-800">{trajet.villeDepart} → {trajet.villeArrivee}</h3>
-                        <p className="text-sm text-gray-500">{new Date(trajet.dateDepart).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à {trajet.heureDepart}</p>
-                    </div>
-                </div>
+                <p className="text-sm font-semibold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-blue-500">{isFuture ? "VOTRE PROCHAIN VOYAGE" : "VOYAGE EN COURS"}</p>
+                <h3 className="font-bold text-3xl text-gray-800 mt-1">{trajet.villeDepart} → {trajet.villeArrivee}</h3>
+                <p className="text-sm text-gray-500 mt-1">{new Date(trajet.dateDepart).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à {trajet.heureDepart}</p>
+            </div>
+            <div className="flex-grow flex items-center justify-center p-6 bg-gray-50/50">
                 {isFuture ? (
-                    <div className="p-6 bg-blue-50/50 rounded-lg text-center"><CountdownDisplay targetDateTime={departureDateTime} /></div>
+                    <CountdownDisplay targetDateTime={departureDateTime} />
                 ) : (
-                    <div className="text-center mt-4">
-                        {data.liveTrip ? (
-                            <Link to={`/tracking/map/${data.liveTrip._id}`} className="inline-block px-8 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-lg hover:shadow-green-400/50 text-base">
-                                <FiMapPin className="inline mr-2"/> Suivre en Temps Réel
-                            </Link>
-                        ) : (
-                            <div className="p-4 bg-gray-100 rounded-lg flex items-center justify-center gap-3 text-gray-600">Le suivi pour ce voyage est indisponible.</div>
-                        )}
-                    </div>
+                    data.liveTrip ? (
+                        <Link to={`/tracking/map/${data.liveTrip._id}`} className="inline-block px-8 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-lg hover:shadow-green-400/50 text-base">
+                            <FiMapPin className="inline mr-2"/> Suivre en Temps Réel
+                        </Link>
+                    ) : (
+                        <div className="p-4 bg-gray-100 rounded-lg flex items-center justify-center gap-3 text-gray-600">Le suivi pour ce voyage est indisponible.</div>
+                    )
                 )}
             </div>
         </div>
     );
 };
 
-// --- WIDGET 4 : Suivi de Colis (Inchangé) ---
-const ColisWidget = () => {
-    // ... (le code de ce composant reste identique)
-    const [code, setCode] = useState(''); const [colis, setColis] = useState(null); const [loading, setLoading] = useState(false); const [error, setError] = useState('');
-    const handleTrack = async (e) => { e.preventDefault(); if (!code.trim()) return; setLoading(true); setError(''); setColis(null); try { const { data } = await api.get(`/public/colis/track/${code}`); setColis(data); } catch (err) { setError(err.response?.data?.message || 'Colis introuvable.'); } finally { setLoading(false); } };
-    return (<div className="space-y-4"><p className="text-gray-600 text-sm">Avez-vous un code de suivi ? Vérifiez le statut de votre colis ici.</p><form onSubmit={handleTrack} className="flex gap-2"><input type="text" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().trim())} placeholder="Entrez un code de suivi..." className="flex-grow border p-2 rounded-md focus:ring-2 focus:ring-pink-400"/><button type="submit" disabled={loading} className="p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300">{loading ? <FiLoader className="animate-spin"/> : <FiSearch />}</button></form>{error && <p className="text-red-500 text-sm flex items-center gap-2"><FiXCircle/> {error}</p>}{colis && (<div className="p-4 rounded-lg border bg-gray-50 animate-fade-in"><div className="flex justify-between items-start"><div><p className="font-semibold">{colis.description}</p><p className="text-xs text-gray-500 font-mono">{colis.code_suivi}</p></div><p className="font-bold text-blue-600">{colis.prix?.toLocaleString('fr-FR')} FCFA</p></div><div className="mt-4"><StatusStepper currentStatus={colis.statut} /></div></div>)}</div>);
+// --- NOUVEAU WIDGET 4 : Statistiques de Voyage ---
+const StatsWidget = ({ upcomingCount, pastCount }) => {
+    const totalCount = (upcomingCount || 0) + (pastCount || 0);
+
+    const StatItem = ({ value, label, icon, colorClass }) => (
+        <div className={`p-4 rounded-lg flex items-center gap-4 ${colorClass}`}>
+            <div className="text-3xl">{icon}</div>
+            <div>
+                <p className="text-2xl font-bold">{value}</p>
+                <p className="text-sm opacity-90">{label}</p>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-black text-white rounded-2xl shadow-xl p-6 h-full flex flex-col justify-between">
+            <div>
+                <h2 className="text-2xl font-bold mb-4 flex items-center gap-3"><FiTrendingUp/> Mes Statistiques</h2>
+                <div className="space-y-3">
+                    <StatItem value={totalCount} label="Voyages au total" icon={<FiAward />} colorClass="bg-blue-500/30" />
+                    <StatItem value={upcomingCount} label="Voyages à venir" icon={<FiSend />} colorClass="bg-pink-500/30" />
+                    <StatItem value={pastCount} label="Voyages terminés" icon={<FiArchive />} colorClass="bg-green-500/20" />
+                </div>
+            </div>
+            <p className="text-xs text-center text-gray-400 mt-6">Merci de voyager avec MyBus !</p>
+        </div>
+    );
 };
 
 
@@ -105,7 +136,7 @@ const ClientDashboardPage = () => {
     const { user } = useContext(AuthContext);
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' ou 'past'
+    const [activeTab, setActiveTab] = useState('upcoming');
 
     useEffect(() => {
         api.get('/dashboard/client-data')
@@ -120,12 +151,10 @@ const ClientDashboardPage = () => {
         <button
             onClick={() => setActiveTab(tabName)}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                activeTab === tabName 
-                ? 'bg-blue-600 text-white shadow-md' 
-                : 'text-gray-500 hover:bg-gray-200'
+                activeTab === tabName ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-200'
             }`}
         >
-            {icon} {label} <span className="bg-white/20 text-xs rounded-full px-2">{count}</span>
+            {icon} {label} <span className="bg-white/20 text-xs rounded-full px-2 py-0.5">{count}</span>
         </button>
     );
 
@@ -136,43 +165,41 @@ const ClientDashboardPage = () => {
                   Bienvenue, <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-blue-500">{user?.prenom}</span> !
                 </h1>
                 
-                {/* Section principale avec Voyage à la Une et Colis */}
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start mb-12">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-stretch mb-12">
                     <div className="lg:col-span-3">
-                        <h2 className="text-2xl font-bold text-gray-700 mb-4 flex items-center gap-3"><FiClock/> À la une</h2>
                         <FeaturedTripWidget data={dashboardData?.tripToDisplay} />
                     </div>
                     <div className="lg:col-span-2">
-                        <h2 className="text-2xl font-bold text-gray-700 mb-4 flex items-center gap-3"><FiBox/> Suivi de Colis</h2>
-                        <ColisWidget />
+                        <StatsWidget 
+                            upcomingCount={dashboardData?.upcomingTrips?.length || 0} 
+                            pastCount={dashboardData?.pastTrips?.length || 0}
+                        />
                     </div>
                 </div>
 
-                {/* Section "Mes Voyages" avec onglets */}
                 <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg p-6 border">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                        <h2 className="text-2xl font-bold text-gray-700">Mes Voyages</h2>
+                        <h2 className="text-2xl font-bold text-gray-700 flex items-center gap-3"><FiStar/> Mes Réservations</h2>
                         <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-full">
                             <TabButton tabName="upcoming" label="À venir" icon={<FiSend/>} count={dashboardData?.upcomingTrips?.length || 0} />
                             <TabButton tabName="past" label="Historique" icon={<FiArchive/>} count={dashboardData?.pastTrips?.length || 0} />
                         </div>
                     </div>
-
-                    {/* Contenu des onglets */}
+                    
                     <ul className="space-y-3">
                         {activeTab === 'upcoming' && (
-                            dashboardData?.upcomingTrips?.length > 0
-                                ? dashboardData.upcomingTrips.map(trip => <TripCard key={trip._id} reservation={trip} />)
-                                : <p className="text-center text-gray-500 py-6">Vous n'avez pas d'autre voyage programmé.</p>
+                            dashboardData?.upcomingTrips?.length > 0 ?
+                                dashboardData.upcomingTrips.map(trip => <TripCard key={trip._id} reservation={trip} />) :
+                                <p className="text-center text-gray-500 py-6">Vous n'avez pas d'autre voyage programmé.</p>
                         )}
                         {activeTab === 'past' && (
-                            dashboardData?.pastTrips?.length > 0
-                                ? dashboardData.pastTrips.map(trip => <TripCard key={trip._id} reservation={trip} />)
-                                : <p className="text-center text-gray-500 py-6">Vous n'avez aucun voyage dans votre historique.</p>
+                            dashboardData?.pastTrips?.length > 0 ?
+                                dashboardData.pastTrips.map(trip => <TripCard key={trip._id} reservation={trip} />) :
+                                <p className="text-center text-gray-500 py-6">Vous n'avez aucun voyage dans votre historique.</p>
                         )}
                     </ul>
-                     <Link to="/search" className="mt-6 w-full block text-center px-4 py-2 bg-blue-50 text-blue-700 font-semibold rounded-lg hover:bg-blue-100 transition">
-                        <FiPlusCircle className="inline mr-2"/> Réserver un nouveau voyage
+                     <Link to="/search" className="mt-6 w-full block text-center px-4 py-3 bg-gradient-to-r from-pink-100 via-blue-100 to-purple-100 text-blue-800 font-bold rounded-lg hover:shadow-lg hover:brightness-105 transition">
+                        <FiPlusCircle className="inline mr-2"/> Réserver un Nouveau Voyage
                     </Link>
                 </div>
             </div>
