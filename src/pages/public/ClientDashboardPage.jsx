@@ -1,4 +1,4 @@
-// src/pages/public/ClientDashboardPage.jsx (NOUVELLE VERSION AMÉLIORÉE)
+// src/pages/public/ClientDashboardPage.jsx (NOUVELLE VERSION AVEC DESIGN AMÉLIORÉ)
 
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { FiClock, FiMapPin, FiLoader, FiCheckCircle, FiArchive, FiPlusCircle, Fi
 // WIDGETS INTERNES (Redésignés et Nouveaux)
 // ==================================================================
 
-// --- WIDGET 1 : Compte à rebours (design amélioré) ---
+// --- WIDGET 1 : Compte à rebours (design inchangé, déjà bon) ---
 const CountdownDisplay = ({ targetDateTime }) => {
     const [timeLeft, setTimeLeft] = useState(targetDateTime.getTime() - new Date().getTime());
     useEffect(() => { if (timeLeft <= 0) return; const timerId = setTimeout(() => { setTimeLeft(timeLeft - 1000); }, 1000); return () => clearTimeout(timerId); }, [timeLeft]);
@@ -30,7 +30,7 @@ const CountdownDisplay = ({ targetDateTime }) => {
     return (<div className="flex justify-center gap-2 sm:gap-4">{d > 0 && formatTime(d, 'Jours')}{(d > 0 || h > 0) && formatTime(h, 'Heures')}{(d > 0 || h > 0 || m > 0) && formatTime(m, 'Minutes')}{formatTime(s, 'Secondes')}</div>);
 };
 
-// --- WIDGET 2 : Carte de Voyage (design amélioré) ---
+// --- WIDGET 2 : Carte de Voyage (design inchangé, déjà bon) ---
 const TripCard = ({ reservation }) => {
     if (!reservation?.trajet) return null;
     const { trajet } = reservation;
@@ -59,7 +59,7 @@ const TripCard = ({ reservation }) => {
     );
 };
 
-// --- WIDGET 3 : Voyage à la Une (design amélioré) ---
+// --- WIDGET 3 : Voyage à la Une (design inchangé, déjà bon) ---
 const FeaturedTripWidget = ({ data }) => {
     if (!data || !data.reservation) {
         return (
@@ -101,31 +101,32 @@ const FeaturedTripWidget = ({ data }) => {
     );
 };
 
-// --- NOUVEAU WIDGET 4 : Statistiques de Voyage ---
+// ==========================================================
+// === NOUVEAU WIDGET 4 : STATISTIQUES (DESIGN CORRIGÉ)
+// ==========================================================
 const StatsWidget = ({ upcomingCount, pastCount }) => {
     const totalCount = (upcomingCount || 0) + (pastCount || 0);
 
-    const StatItem = ({ value, label, icon, colorClass }) => (
-        <div className={`p-4 rounded-lg flex items-center gap-4 ${colorClass}`}>
-            <div className="text-3xl">{icon}</div>
-            <div>
-                <p className="text-2xl font-bold">{value}</p>
-                <p className="text-sm opacity-90">{label}</p>
+    const StatItem = ({ value, label, icon, gradient }) => (
+        <div className={`relative p-4 rounded-xl overflow-hidden ${gradient}`}>
+            <div className="relative z-10">
+                <p className="text-3xl font-bold text-white">{value}</p>
+                <p className="text-sm text-white/80">{label}</p>
+            </div>
+            <div className="absolute -bottom-2 -right-2 text-white/20 text-5xl">
+                {icon}
             </div>
         </div>
     );
 
     return (
-        <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-black text-white rounded-2xl shadow-xl p-6 h-full flex flex-col justify-between">
-            <div>
-                <h2 className="text-2xl font-bold mb-4 flex items-center gap-3"><FiTrendingUp/> Mes Statistiques</h2>
-                <div className="space-y-3">
-                    <StatItem value={totalCount} label="Voyages au total" icon={<FiAward />} colorClass="bg-blue-500/30" />
-                    <StatItem value={upcomingCount} label="Voyages à venir" icon={<FiSend />} colorClass="bg-pink-500/30" />
-                    <StatItem value={pastCount} label="Voyages terminés" icon={<FiArchive />} colorClass="bg-green-500/20" />
-                </div>
+        <div className="bg-gradient-to-br from-blue-50 to-pink-50 rounded-2xl shadow-xl border border-white p-6 h-full">
+            <h2 className="text-2xl font-bold text-gray-700 mb-4 flex items-center gap-3"><FiTrendingUp/> En bref</h2>
+            <div className="space-y-4">
+                <StatItem value={totalCount} label="Voyages au total" icon={<FiAward />} gradient="bg-gradient-to-br from-blue-500 to-blue-400"/>
+                <StatItem value={upcomingCount} label="Voyages à venir" icon={<FiSend />} gradient="bg-gradient-to-br from-pink-500 to-fuchsia-500" />
+                <StatItem value={pastCount} label="Voyages terminés" icon={<FiArchive />} gradient="bg-gradient-to-br from-gray-600 to-gray-500" />
             </div>
-            <p className="text-xs text-center text-gray-400 mt-6">Merci de voyager avec MyBus !</p>
         </div>
     );
 };
