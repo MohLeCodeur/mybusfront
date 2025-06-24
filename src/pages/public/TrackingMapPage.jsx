@@ -1,4 +1,4 @@
-// src/pages/public/TrackingMapPage.jsx (CODE COMPLET AVEC SUIVI EN TEMPS RÉEL)
+// src/pages/public/TrackingMapPage.jsx (CODE FINAL, STABLE ET CORRIGÉ)
 
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -6,16 +6,33 @@ import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '../../api';
-import { FiLoader, FiArrowLeft, FiMap, FiClock, FiCheckCircle, FiSunrise, FiSunset, FiNavigation2, FiUser, FiShare2, FiAlertTriangle } from 'react-icons/fi';
-import ReactDOMServer from 'react-dom/server';
+import { FiLoader, FiArrowLeft, FiMap, FiClock, FiCheckCircle, FiSunrise, FiSunset, FiUser, FiShare2, FiAlertTriangle } from 'react-icons/fi';
 
-// --- Icônes et Composants Internes (inchangés) ---
-const createDivIcon = (iconComponent, options = {}) => L.divIcon({ html: ReactDOMServer.renderToString(iconComponent), className: 'bg-transparent border-0', ...options });
+// ====================================================================
+// --- DÉBUT : LA SOLUTION DÉFINITIVE ET STABLE POUR LES ICÔNES ---
+// On crée les icônes en utilisant des chaînes de caractères HTML pures et des classes Tailwind.
+// C'est la méthode la plus fiable car elle n'a pas de dépendances complexes.
+// ====================================================================
 
-const busIcon = createDivIcon(<div className="relative"><FiNavigation2 size={28} className="text-white bg-blue-600 p-1.5 rounded-full shadow-lg" /><div className="absolute inset-0 bg-blue-400 rounded-full animate-ping -z-10"></div></div>, { iconAnchor: [14, 14] });
-const startIcon = createDivIcon(<div className="p-2 bg-green-500 rounded-full shadow-lg"><FiSunrise size={20} className="text-white"/></div>, { iconAnchor: [20, 40] });
-const endIcon = createDivIcon(<div className="p-2 bg-red-500 rounded-full shadow-lg"><FiSunset size={20} className="text-white"/></div>, { iconAnchor: [20, 40] });
-const userIcon = createDivIcon(<div className="p-2 bg-pink-500 rounded-full shadow-lg"><FiUser size={20} className="text-white"/></div>, { iconAnchor: [20, 40] });
+const createCustomIcon = (emoji, colorClass) => {
+    return L.divIcon({
+        html: `<div class="p-2 ${colorClass} rounded-full shadow-lg text-white text-xl flex items-center justify-center">${emoji}</div>`,
+        className: 'bg-transparent border-0',
+        iconSize: [40, 40],
+        iconAnchor: [20, 40], // Ancrage en bas au centre, comme une épingle
+        popupAnchor: [0, -40]
+    });
+};
+
+const busIcon = createCustomIcon('🚌', 'bg-blue-600');
+const userIcon = createCustomIcon('👤', 'bg-pink-500');
+const startIcon = createCustomIcon('🏁', 'bg-green-500');
+const endIcon = createCustomIcon('📍', 'bg-red-500');
+
+// ====================================================================
+// --- FIN DE LA SOLUTION POUR LES ICÔNES ---
+// ====================================================================
+
 
 const ChangeView = ({ center, zoom }) => {
     const map = useMap();
@@ -28,21 +45,18 @@ const InfoCard = ({ icon, title, value }) => (
     <div><p className="text-xs text-gray-500 flex items-center gap-1">{icon} {title}</p><p className="font-bold text-lg text-gray-800">{value}</p></div>
 );
 
-// --- Composant Principal de la Page ---
 const TrackingMapPage = () => {
+    // Toute la logique de votre composant (états, useEffects, etc.) reste identique.
     const { liveTripId } = useParams();
     const [liveTrip, setLiveTrip] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-
-    // --- ÉTATS POUR LA GÉOLOCALISATION EN TEMPS RÉEL DE L'UTILISATEUR ---
     const [userPosition, setUserPosition] = useState(null);
     const [userRoute, setUserRoute] = useState(null);
     const [geoError, setGeoError] = useState('');
     const [calculatingRoute, setCalculatingRoute] = useState(false);
-    const [watchId, setWatchId] = useState(null); // Pour stocker l'ID du suivi
+    const [watchId, setWatchId] = useState(null);
 
-    // Récupération des données du voyage du bus (inchangé)
     useEffect(() => {
         const fetchTripData = () => {
             api.get(`/tracking/live/${liveTripId}`)
@@ -55,25 +69,19 @@ const TrackingMapPage = () => {
         return () => clearInterval(interval);
     }, [liveTripId, loading]);
 
-    // --- FONCTION POUR DÉMARRER/ARRÊTER LE SUIVI DE L'UTILISATEUR ---
     const toggleUserTracking = () => {
         if (!navigator.geolocation) {
             setGeoError("La géolocalisation n'est pas supportée par votre navigateur.");
             return;
         }
-
-        // Si le suivi est déjà actif, on l'arrête
         if (watchId) {
             navigator.geolocation.clearWatch(watchId);
             setWatchId(null);
             setUserPosition(null);
             setUserRoute(null);
-            setGeoError(''); // On efface les anciennes erreurs
-            console.log("Suivi de l'utilisateur arrêté.");
+            setGeoError('');
             return;
         }
-
-        // Si le suivi n'est pas actif, on le démarre avec watchPosition()
         const id = navigator.geolocation.watchPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
@@ -88,24 +96,20 @@ const TrackingMapPage = () => {
         setWatchId(id);
     };
 
-    // Calcul de l'itinéraire de l'utilisateur (se déclenche à chaque nouvelle position)
     useEffect(() => {
         if (userPosition && liveTrip?.trajetId?.coordsArrivee) {
             setCalculatingRoute(true);
-            
             const payload = {
                 pointA: { lat: userPosition[0], lng: userPosition[1] },
                 pointB: { lat: liveTrip.trajetId.coordsArrivee.lat, lng: liveTrip.trajetId.coordsArrivee.lng }
             };
-
             api.post('/tracking/calculate-route', payload)
                 .then(res => setUserRoute(res.data))
                 .catch(() => setGeoError("Impossible de calculer l'itinéraire jusqu'à la destination."))
                 .finally(() => setCalculatingRoute(false));
         }
-    }, [userPosition, liveTrip?.trajetId?.coordsArrivee]); // Dépendance corrigée pour plus de sécurité
+    }, [userPosition, liveTrip?.trajetId?.coordsArrivee]);
 
-    // Nettoyage du suivi si le composant est démonté
     useEffect(() => {
         return () => {
             if (watchId) {
@@ -113,7 +117,6 @@ const TrackingMapPage = () => {
             }
         };
     }, [watchId]);
-
 
     if (loading) return <div className="flex justify-center items-center h-screen"><FiLoader className="animate-spin text-4xl text-blue-500"/></div>;
     if (error) return <div className="text-center p-8 text-red-500 bg-red-50">{error}</div>;
@@ -130,13 +133,11 @@ const TrackingMapPage = () => {
         <div className="h-screen w-screen flex flex-col lg:grid lg:grid-cols-4">
             <aside className="h-1/2 lg:h-full lg:col-span-1 bg-white p-6 flex flex-col shadow-2xl z-10 overflow-y-auto">
                 <Link to="/dashboard" className="flex items-center gap-2 text-sm text-blue-600 hover:underline mb-6 shrink-0"><FiArrowLeft /> Mon Compte</Link>
-                
                 <div className="mb-4">
                     <div className="flex items-center gap-4"><FiSunrise className="text-2xl text-green-500 shrink-0"/><div><p className="text-xs text-gray-500">Départ</p><h2 className="text-xl font-bold text-gray-800">{liveTrip.originCityName}</h2></div></div>
                     <div className="h-8 border-l-2 border-dashed border-gray-300 ml-3 my-1"></div>
                     <div className="flex items-center gap-4"><FiSunset className="text-2xl text-red-500 shrink-0"/><div><p className="text-xs text-gray-500">Arrivée</p><h2 className="text-xl font-bold text-gray-800">{liveTrip.destinationCityName}</h2></div></div>
                 </div>
-
                 <div className="my-4 border-t pt-4 space-y-4">
                     <h3 className="font-bold text-gray-700">Détails du voyage du bus</h3>
                     <div className="p-4 bg-gray-50 rounded-lg grid grid-cols-2 gap-4">
@@ -145,13 +146,9 @@ const TrackingMapPage = () => {
                         <InfoCard icon={<FiCheckCircle className="text-green-500"/>} title="Statut" value={<span className={`font-bold ${liveTrip.status === 'En cours' ? 'text-green-600 animate-pulse' : 'text-gray-700'}`}>{liveTrip.status}</span>} />
                     </div>
                 </div>
-
                 <div className="my-4 border-t pt-4 space-y-3">
                     <h3 className="font-bold text-gray-700">Mon Itinéraire vers la Destination</h3>
-                    {/* --- BOUTON MODIFIÉ POUR DÉMARRER/ARRÊTER --- */}
-                    <button onClick={toggleUserTracking} className={`w-full flex items-center justify-center gap-2 px-4 py-2 font-semibold rounded-lg transition ${
-                        watchId ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-pink-500 text-white hover:bg-pink-600'
-                    }`}>
+                    <button onClick={toggleUserTracking} className={`w-full flex items-center justify-center gap-2 px-4 py-2 font-semibold rounded-lg transition ${ watchId ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-pink-500 text-white hover:bg-pink-600' }`}>
                         {watchId ? <><FiUser className="animate-pulse"/> Arrêter le suivi</> : <><FiShare2/> Suivre ma position</>}
                     </button>
                     {geoError && <p className="text-xs text-red-500 flex items-center gap-1"><FiAlertTriangle/> {geoError}</p>}
@@ -163,12 +160,10 @@ const TrackingMapPage = () => {
                         </div>
                     )}
                 </div>
-
                 <div className="mt-auto pt-4 border-t text-center">
                     <p className="text-xs text-gray-400">Bus n°{liveTrip.busId?.numero || 'N/A'} - MyBus Tracking System</p>
                 </div>
             </aside>
-
             <main className="h-1/2 lg:h-full lg:col-span-3 z-0">
                 <MapContainer center={busPosition || defaultCenter} zoom={7} className="h-full w-full">
                     <ChangeView center={userPosition || busPosition || defaultCenter} />
