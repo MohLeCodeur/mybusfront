@@ -1,4 +1,4 @@
-// src/pages/public/TrackingMapPage.jsx (CODE FINAL, STABLE ET CORRIGÉ)
+// src/pages/public/TrackingMapPage.jsx (VERSION FINALE AVEC ICÔNES PRO CORRIGÉES)
 
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -6,31 +6,56 @@ import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '../../api';
-import { FiLoader, FiArrowLeft, FiMap, FiClock, FiCheckCircle, FiSunrise, FiSunset, FiUser, FiShare2, FiAlertTriangle } from 'react-icons/fi';
+import { FiLoader, FiArrowLeft, FiMap, FiClock, FiCheckCircle, FiSunrise, FiSunset, FiNavigation2, FiUser, FiShare2, FiAlertTriangle } from 'react-icons/fi';
+import ReactDOMServer from 'react-dom/server';
 
 // ====================================================================
-// --- DÉBUT : LA SOLUTION DÉFINITIVE ET STABLE POUR LES ICÔNES ---
-// On crée les icônes en utilisant des chaînes de caractères HTML pures et des classes Tailwind.
-// C'est la méthode la plus fiable car elle n'a pas de dépendances complexes.
+// --- DÉBUT : CORRECTION FINALE DES ICÔNES REACT PROFESSIONNELLES ---
 // ====================================================================
-
-const createCustomIcon = (emoji, colorClass) => {
-    return L.divIcon({
-        html: `<div class="p-2 ${colorClass} rounded-full shadow-lg text-white text-xl flex items-center justify-center">${emoji}</div>`,
-        className: 'bg-transparent border-0',
-        iconSize: [40, 40],
-        iconAnchor: [20, 40], // Ancrage en bas au centre, comme une épingle
-        popupAnchor: [0, -40]
-    });
+const createDivIcon = (iconComponent, options = {}) => {
+  return L.divIcon({
+    html: ReactDOMServer.renderToString(iconComponent),
+    className: 'bg-transparent border-0',
+    iconSize: [options.size || 40, options.size || 40],
+    iconAnchor: [options.anchorX || 20, options.anchorY || 40],
+    popupAnchor: [0, -40]
+  });
 };
 
-const busIcon = createCustomIcon('🚌', 'bg-blue-600');
-const userIcon = createCustomIcon('👤', 'bg-pink-500');
-const startIcon = createCustomIcon('🏁', 'bg-green-500');
-const endIcon = createCustomIcon('📍', 'bg-red-500');
+// Icône du Bus
+const busIcon = createDivIcon(
+  // On fixe la taille du conteneur avec des classes Tailwind pour la cohérence
+  <div className="relative flex items-center justify-center w-[40px] h-[40px]">
+    <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping"></div>
+    <div className="relative flex items-center justify-center w-8 h-8 bg-blue-600 rounded-full shadow-lg">
+      <FiNavigation2 size={20} className="text-white" />
+    </div>
+  </div>,
+  // On ancre au centre de l'icône, car c'est un cercle
+  { size: 40, anchorX: 20, anchorY: 20 }
+);
 
+// Icône de l'utilisateur
+const userIcon = createDivIcon(
+  <div className="p-2 bg-pink-500 rounded-full shadow-lg">
+    <FiUser size={20} className="text-white"/>
+  </div>
+);
+
+// Icônes de départ et d'arrivée
+const startIcon = createDivIcon(
+  <div className="p-2 bg-green-500 rounded-full shadow-lg">
+    <FiSunrise size={20} className="text-white"/>
+  </div>
+);
+
+const endIcon = createDivIcon(
+  <div className="p-2 bg-red-500 rounded-full shadow-lg">
+    <FiSunset size={20} className="text-white"/>
+  </div>
+);
 // ====================================================================
-// --- FIN DE LA SOLUTION POUR LES ICÔNES ---
+// --- FIN DE LA CORRECTION
 // ====================================================================
 
 
@@ -46,7 +71,7 @@ const InfoCard = ({ icon, title, value }) => (
 );
 
 const TrackingMapPage = () => {
-    // Toute la logique de votre composant (états, useEffects, etc.) reste identique.
+    // Toute la logique (états, useEffects, etc.) est conservée
     const { liveTripId } = useParams();
     const [liveTrip, setLiveTrip] = useState(null);
     const [loading, setLoading] = useState(true);
