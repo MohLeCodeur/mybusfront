@@ -1,12 +1,15 @@
-// src/pages/public/PublicColisTrackingPage.jsx
+// src/pages/public/PublicColisTrackingPage.jsx (CODE COMPLET ET CORRIGÉ)
+
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import AuthContext from '../../context/AuthContext';
+// --- LIGNE MODIFIÉE : Ajout de l'icône FaRoute ---
 import { FiSearch, FiLoader, FiXCircle, FiPackage, FiUser, FiPhone, FiThumbsUp, FiSend, FiCheckCircle } from 'react-icons/fi';
+import { FaRoute } from 'react-icons/fa';
 import StatusStepper from '../../components/admin/StatusStepper.jsx';
 
-// --- Composant pour l'alerte de statut ---
+// --- Composant pour l'alerte de statut (inchangé) ---
 const StatusAlert = ({ status }) => {
     const statusInfo = {
         'enregistré': {
@@ -31,10 +34,8 @@ const StatusAlert = ({ status }) => {
             borderColor: "border-green-500",
         }
     };
-
     const info = statusInfo[status];
     if (!info) return null;
-
     return (
         <div className={`p-4 rounded-lg border-l-4 ${info.bgColor} ${info.borderColor}`}>
             <div className="flex items-center gap-4">
@@ -54,28 +55,21 @@ const PublicColisTrackingPage = () => {
   const [colis, setColis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // --- Utilisation des hooks de contexte et de navigation ---
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleTrack = async (e) => {
     e.preventDefault();
     if (!code.trim()) return;
-
-    // --- VÉRIFICATION DE CONNEXION ---
     if (!user) {
-        // Si l'utilisateur n'est pas connecté, le redirige vers la page de connexion
-        // en gardant en mémoire la page actuelle pour y revenir après connexion.
         navigate('/login', { state: { from: { pathname: '/track-colis' } } });
-        return; // Arrête l'exécution de la recherche
+        return;
     }
-    // ---------------------------------
-
     setLoading(true);
     setError('');
     setColis(null);
     try {
+      // Cet appel va maintenant recevoir les données du trajet grâce à la modif du backend
       const { data } = await api.get(`/public/colis/track/${code}`);
       setColis(data);
     } catch (err) {
@@ -131,6 +125,23 @@ const PublicColisTrackingPage = () => {
                     <h3 className="text-center font-semibold mb-6 text-gray-600">Progression détaillée</h3>
                     <StatusStepper currentStatus={colis.statut} />
                 </div>
+
+                {/* ========================================================== */}
+                {/* === NOUVELLE SECTION POUR LES DÉTAILS DU TRAJET === */}
+                {/* ========================================================== */}
+                {colis.trajet && (
+                  <div className="p-6 bg-gray-50/50 border-t">
+                      <h4 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <FaRoute className="text-blue-500"/>
+                        Informations du Trajet
+                      </h4>
+                      <div className="text-sm space-y-1 pl-8">
+                        <p><strong>Itinéraire :</strong> {colis.trajet.villeDepart} → {colis.trajet.villeArrivee}</p>
+                        <p><strong>Date de départ prévue :</strong> {new Date(colis.trajet.dateDepart).toLocaleDateString('fr-FR')}</p>
+                        <p><strong>Compagnie :</strong> {colis.trajet.compagnie}</p>
+                      </div>
+                  </div>
+                )}
                 
                 <div className="p-6 bg-gray-50/50 grid md:grid-cols-2 gap-6 border-t">
                     <div>
@@ -156,4 +167,5 @@ const PublicColisTrackingPage = () => {
     </main>
   );
 };
+
 export default PublicColisTrackingPage;
