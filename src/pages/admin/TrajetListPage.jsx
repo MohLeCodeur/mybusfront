@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { FiPlus, FiEdit, FiTrash2, FiLoader, FiPlayCircle, FiChevronLeft, FiChevronRight, FiCalendar, FiDollarSign, FiCheckCircle } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiLoader, FiPlayCircle, FiChevronLeft, FiChevronRight, FiCalendar, FiTag, FiCheckCircle } from 'react-icons/fi';
 import { FaRoute } from 'react-icons/fa';
 
 const TrajetListPage = () => {
@@ -155,7 +155,7 @@ const TrajetListPage = () => {
                         </div>
                         <div className="flex justify-between text-sm text-gray-600 border-y my-3 py-2">
                             <span className="flex items-center gap-1"><FiCalendar size={14}/> {new Date(t.dateDepart).toLocaleDateString('fr-FR')} - {t.heureDepart}</span>
-                            <span className="flex items-center gap-1 font-semibold"><FiDollarSign size={14}/> {t.prix.toLocaleString()} FCFA</span>
+                           <span className="flex items-center gap-1 font-semibold"><FiTag size={14}/> {t.prix.toLocaleString()} FCFA</span>
                         </div>
                         <div className="flex justify-between items-center">
                             <p className="text-xs text-gray-500">Bus: <span className="font-semibold">{t.bus?.numero || 'Non assigné'}</span></p>

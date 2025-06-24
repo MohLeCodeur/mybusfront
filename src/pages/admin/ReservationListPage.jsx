@@ -1,10 +1,12 @@
-// src/pages/admin/ReservationListPage.jsx
+// src/pages/admin/ReservationListPage.jsx (CODE COMPLET ET CORRIGÉ)
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { FiLoader, FiEdit, FiTrash2, FiCheckCircle, FiUser, FiCalendar, FiDollarSign, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+// --- LIGNE MODIFIÉE : FiDollarSign a été remplacé par FiTag ---
+import { FiLoader, FiEdit, FiTrash2, FiCheckCircle, FiUser, FiCalendar, FiTag, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 // Composant interne pour afficher une seule carte de réservation
 const ReservationCard = ({ reservation, onConfirm, onDelete, onEdit }) => {
@@ -36,7 +38,8 @@ const ReservationCard = ({ reservation, onConfirm, onDelete, onEdit }) => {
             </div>
             <div className="border-t mt-4 pt-4 flex justify-between items-center">
                 <div className="flex items-center gap-2 text-blue-600 font-bold">
-                    <FiDollarSign/>
+                    {/* --- LIGNE MODIFIÉE : FiDollarSign a été remplacé par FiTag --- */}
+                    <FiTag/>
                     <span>{montantTotal.toLocaleString('fr-FR')} FCFA</span>
                     <span className="text-gray-400 font-normal text-sm">({reservation.placesReservees} place{reservation.placesReservees > 1 ? 's' : ''})</span>
                 </div>
