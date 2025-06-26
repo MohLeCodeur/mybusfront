@@ -1,5 +1,3 @@
-// src/pages/admin/TrajetListPage.jsx
-
 import React, { useState, useEffect, useMemo, useCallback, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, Transition } from '@headlessui/react';
@@ -7,13 +5,13 @@ import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { 
-  FiPlus, FiEdit, FiTrash2, FiLoader, FiPlayCircle, FiStopCircle, FiBell, FiChevronDown,
+  FiPlus, FiEdit, FiLoader, FiPlayCircle, FiStopCircle, FiBell, FiChevronDown,
   FiChevronLeft, FiChevronRight, FiCalendar, FiTag, FiCheckCircle, FiXCircle
 } from 'react-icons/fi';
 import { FaRoute } from 'react-icons/fa';
 
 // ====================================================================
-// COMPOSANT INTERNE : Le Menu d'Actions (LOGIQUE ENTIÈREMENT REVUE)
+// COMPOSANT INTERNE : Le Menu d'Actions (LOGIQUE FINALE)
 // ====================================================================
 const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
   const [processing, setProcessing] = useState(false);
@@ -24,8 +22,9 @@ const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
     setProcessing(true);
     onActionStart();
     try {
-      await apiFunc();
-      alert(successMsg);
+      const res = await apiFunc();
+      // Si un message de succès est fourni, on l'affiche. Sinon, on se fie au message du backend.
+      alert(successMsg || res.data.message);
       fetchTrajets();
     } catch (err) {
       alert("Erreur: " + (err.response?.data?.message || "Une erreur est survenue."));
@@ -50,17 +49,11 @@ const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
   const notifyDelay = () => {
     if (!window.confirm("Envoyer une notification de retard à tous les passagers ?")) return;
     handleApiCall(
-      async () => {
-        const res = await api.post('/tracking/notify-delay', { trajetId: trajet._id });
-        alert(res.data.message); // Affiche le message de succès spécifique du backend
-      },
-      "" // Message de succès géré dans la fonction elle-même
+      () => api.post('/tracking/notify-delay', { trajetId: trajet._id }),
+      null // Le message de succès vient du backend
     );
   };
   
-  // ==========================================================
-  // === NOUVELLE FONCTION D'ANNULATION
-  // ==========================================================
   const cancelTrajet = () => {
     if (!window.confirm("Voulez-vous vraiment annuler ce trajet ? Il ne sera plus visible et son suivi sera arrêté.")) return;
     handleApiCall(
@@ -75,7 +68,9 @@ const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
   const oneHourBefore = new Date(departureDateTime.getTime() - 60 * 60 * 1000);
   const isDelayedAndNotStarted = now > departureDateTime && !(trajet.liveTrip && trajet.liveTrip.status === 'En cours');
   
-  // Rendu du menu
+  // --- NOUVELLE CONDITION STRICTE POUR LE DÉMARRAGE ---
+  const canStartTrip = now >= oneHourBefore && now <= departureDateTime;
+
   const renderMenuButton = (text, style) => (
     <Menu.Button as={Button} size="sm" className={`${style} w-32 justify-between`} disabled={processing}>
       {processing ? <FiLoader className="animate-spin" /> : text}
@@ -115,10 +110,10 @@ const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
     return <span className={`flex items-center gap-1.5 px-3 py-1 ${isCancelled ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-700'} text-xs font-semibold rounded-full`}>{isCancelled ? <FiXCircle /> : <FiCheckCircle />} {isCancelled ? 'Annulé' : 'Terminé'}</span>;
   }
   
-  // CAS 3: Voyage à venir (heure non passée)
-  if (now <= departureDateTime) {
+  // CAS 3: Voyage à venir et dans la fenêtre de démarrage
+  if (canStartTrip) {
       return (
-        <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white w-32 justify-center" onClick={startTrip} disabled={processing || now < oneHourBefore}>
+        <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white w-32 justify-center" onClick={startTrip} disabled={processing}>
           {processing ? <FiLoader className="animate-spin"/> : <><FiPlayCircle className="mr-1"/> Démarrer</>}
         </Button>
       );
@@ -134,7 +129,6 @@ const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
             <div className="py-1">
               {renderMenuItem("Démarrer (en retard)", <FiPlayCircle className="mr-2 h-5 w-5 text-green-500" />, startTrip)}
               {renderMenuItem("Notifier du retard", <FiBell className="mr-2 h-5 w-5 text-blue-500" />, notifyDelay)}
-              {/* === LIGNE MODIFIÉE : Le bouton est maintenant toujours cliquable === */}
               {renderMenuItem("Annuler le trajet", <FiXCircle className="mr-2 h-5 w-5 text-red-500" />, cancelTrajet)}
             </div>
           </Menu.Items>
@@ -143,17 +137,19 @@ const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
     );
   }
   
-  return null; // Cas par défaut
+  // CAS 5: Voyage trop dans le futur
+  if (now < oneHourBefore) {
+    return <span className="text-xs italic text-gray-400">À venir</span>;
+  }
+  
+  return null;
 };
 
+
 // ====================================================================
-// COMPOSANT PRINCIPAL DE LA PAGE (inchangé par rapport à la version précédente)
+// COMPOSANT PRINCIPAL DE LA PAGE
 // ====================================================================
-const TrajetListPage = ({
-  // ... (le reste du composant TrajetListPage est identique à la version précédente)
-  // Vous pouvez simplement remplacer le composant ActionMenu et ajouter la nouvelle fonction handleApiCall
-  // Le reste du JSX de la page n'a pas besoin de changer.
-}) => {
+const TrajetListPage = () => {
   const [allTrajets, setAllTrajets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -165,7 +161,6 @@ const TrajetListPage = ({
   const ITEMS_PER_PAGE = 8;
 
   const fetchTrajets = useCallback(() => {
-    // On met le loader global, mais pas le `isActionProcessing` qui est pour les boutons
     setLoading(true); 
     api.get(`/admin/trajets?status=${statusFilter}`)
       .then(res => setAllTrajets(Array.isArray(res.data) ? res.data : []))
@@ -174,17 +169,6 @@ const TrajetListPage = ({
   }, [statusFilter]);
 
   useEffect(fetchTrajets, [fetchTrajets]);
-
-  const handleDelete = async (id, nomTrajet) => {
-    if (window.confirm(`Supprimer le trajet ${nomTrajet} ? Cette action est irréversible.`)) {
-        setIsActionProcessing(true);
-        try {
-            await api.delete(`/admin/trajets/${id}`);
-            fetchTrajets(); // Rafraîchit la liste après la suppression
-        } catch(err) { alert("Erreur: " + err.response?.data?.message) }
-        finally { setIsActionProcessing(false) }
-    }
-  };
 
   const sortedTrajets = useMemo(() => {
     return [...allTrajets].sort((a, b) => {
@@ -248,8 +232,8 @@ const TrajetListPage = ({
                                 onActionStart={() => setIsActionProcessing(true)} 
                                 onActionEnd={fetchTrajets} 
                             />
+                            {/* --- Bouton de suppression retiré, mais on garde le bouton "Modifier" --- */}
                             <Button size="sm" variant="outline" onClick={() => navigate(`/admin/trajets/${t._id}/edit`)} title="Modifier" disabled={isActionProcessing}><FiEdit/></Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleDelete(t._id, `${t.villeDepart} → ${t.villeArrivee}`)} title="Supprimer" disabled={isActionProcessing}><FiTrash2/></Button>
                         </div>
                     </div>
                 </div>
