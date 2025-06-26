@@ -8,80 +8,100 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Button } from '../../components/ui/Button.jsx';
 import { 
   FiPlus, FiEdit, FiTrash2, FiLoader, FiPlayCircle, FiStopCircle, FiBell, FiChevronDown,
-  FiChevronLeft, FiChevronRight, FiCalendar, FiTag, FiCheckCircle, FiAlertTriangle 
+  FiChevronLeft, FiChevronRight, FiCalendar, FiTag, FiCheckCircle, FiXCircle
 } from 'react-icons/fi';
 import { FaRoute } from 'react-icons/fa';
 
 // ====================================================================
-// NOUVEAU COMPOSANT INTERNE : Le Menu d'Actions
-// C'est ici que toute la nouvelle logique se trouve.
+// COMPOSANT INTERNE : Le Menu d'Actions (LOGIQUE ENTIÈREMENT REVUE)
 // ====================================================================
 const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
-  const navigate = useNavigate();
   const [processing, setProcessing] = useState(false);
 
-  const fetchTrajets = onActionEnd; // Renommer pour la clarté
+  const fetchTrajets = onActionEnd;
 
-  // Fonctions pour appeler l'API, maintenant internes au menu
-  const handleStartTrip = async (trajetId) => {
-    setProcessing(true); onActionStart();
+  const handleApiCall = async (apiFunc, successMsg) => {
+    setProcessing(true);
+    onActionStart();
     try {
-      await api.post('/tracking/start-trip', { trajetId });
-      alert("Voyage démarré avec succès !");
+      await apiFunc();
+      alert(successMsg);
       fetchTrajets();
-    } catch (err) { alert("Erreur: " + (err.response?.data?.message || "Impossible de démarrer.")); } 
-    finally { setProcessing(false); }
+    } catch (err) {
+      alert("Erreur: " + (err.response?.data?.message || "Une erreur est survenue."));
+    } finally {
+      setProcessing(false);
+    }
   };
 
-  const handleEndTrip = async (liveTripId) => {
+  const startTrip = () => handleApiCall(
+    () => api.post('/tracking/start-trip', { trajetId: trajet._id }),
+    "Voyage démarré avec succès !"
+  );
+
+  const endTrip = () => {
     if (!window.confirm("Voulez-vous vraiment marquer ce voyage comme 'Terminé' ?")) return;
-    setProcessing(true); onActionStart();
-    try {
-      await api.post(`/tracking/end-trip/${liveTripId}`);
-      alert("Voyage terminé.");
-      fetchTrajets();
-    } catch (err) { alert("Erreur: " + (err.response?.data?.message || "Impossible de terminer.")); }
-    finally { setProcessing(false); }
+    handleApiCall(
+      () => api.post(`/tracking/end-trip/${trajet.liveTrip._id}`),
+      "Voyage terminé."
+    );
   };
   
-  const handleNotifyDelay = async (trajetId) => {
-      if(!window.confirm("Envoyer une notification de retard à tous les passagers ?")) return;
-      setProcessing(true); onActionStart();
-      try {
-          const res = await api.post('/tracking/notify-delay', { trajetId });
-          alert(res.data.message);
-      } catch(err) { alert("Erreur: " + (err.response?.data?.message || "Notification échouée.")); }
-      finally { setProcessing(false); }
+  const notifyDelay = () => {
+    if (!window.confirm("Envoyer une notification de retard à tous les passagers ?")) return;
+    handleApiCall(
+      async () => {
+        const res = await api.post('/tracking/notify-delay', { trajetId: trajet._id });
+        alert(res.data.message); // Affiche le message de succès spécifique du backend
+      },
+      "" // Message de succès géré dans la fonction elle-même
+    );
+  };
+  
+  // ==========================================================
+  // === NOUVELLE FONCTION D'ANNULATION
+  // ==========================================================
+  const cancelTrajet = () => {
+    if (!window.confirm("Voulez-vous vraiment annuler ce trajet ? Il ne sera plus visible et son suivi sera arrêté.")) return;
+    handleApiCall(
+      () => api.put(`/admin/trajets/${trajet._id}/cancel`),
+      "Trajet annulé."
+    );
   };
 
   // Logique d'affichage
   const now = new Date();
-  const departureDateTime = new Date(`${new Date(trajet.dateDepart).toISOString().split('T')[0]}T${trajet.heureDepart}:00`);
+  const departureDateTime = new Date(`${new Date(trajet.dateDepart).toISOString().split('T')[0]}T${trajet.heureDepart}:00Z`);
   const oneHourBefore = new Date(departureDateTime.getTime() - 60 * 60 * 1000);
-  const oneHourAfter = new Date(departureDateTime.getTime() + 60 * 60 * 1000);
-
-  const isWithinStartWindow = now >= oneHourBefore && now <= oneHourAfter;
-  const isDelayedAndNotStarted = now > departureDateTime && !(trajet.liveTrip && trajet.liveTrip.status);
+  const isDelayedAndNotStarted = now > departureDateTime && !(trajet.liveTrip && trajet.liveTrip.status === 'En cours');
   
+  // Rendu du menu
+  const renderMenuButton = (text, style) => (
+    <Menu.Button as={Button} size="sm" className={`${style} w-32 justify-between`} disabled={processing}>
+      {processing ? <FiLoader className="animate-spin" /> : text}
+      <FiChevronDown className="-mr-1 ml-2 h-5 w-5" aria-hidden="true" />
+    </Menu.Button>
+  );
+
+  const renderMenuItem = (text, icon, action) => (
+    <Menu.Item>
+      {({ active }) => (
+        <button onClick={action} className={`${active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} group flex w-full items-center rounded-md px-2 py-2 text-sm`}>
+          {icon} {text}
+        </button>
+      )}
+    </Menu.Item>
+  );
+
   // CAS 1: Voyage en cours
   if (trajet.liveTrip && trajet.liveTrip.status === 'En cours') {
     return (
       <Menu as="div" className="relative inline-block text-left">
-        <Menu.Button as={Button} size="sm" className="bg-blue-500 text-white hover:bg-blue-600 w-32 justify-between">
-          En cours
-          <FiChevronDown className="-mr-1 ml-2 h-5 w-5" aria-hidden="true" />
-        </Menu.Button>
+        {renderMenuButton("En cours", "bg-blue-500 text-white hover:bg-blue-600")}
         <Transition as={Fragment} enter="transition ease-out duration-100" enterFrom="transform opacity-0 scale-95" enterTo="transform opacity-100 scale-100" leave="transition ease-in duration-75" leaveFrom="transform opacity-100 scale-100" leaveTo="transform opacity-0 scale-95">
           <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
             <div className="py-1">
-              <Menu.Item>
-                {({ active }) => (
-                  <button onClick={() => handleEndTrip(trajet.liveTrip._id)} className={`${active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} group flex w-full items-center rounded-md px-2 py-2 text-sm`}>
-                    <FiStopCircle className="mr-2 h-5 w-5 text-red-500" aria-hidden="true" />
-                    Terminer le voyage
-                  </button>
-                )}
-              </Menu.Item>
+              {renderMenuItem("Terminer le voyage", <FiStopCircle className="mr-2 h-5 w-5 text-red-500" />, endTrip)}
             </div>
           </Menu.Items>
         </Transition>
@@ -89,70 +109,51 @@ const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
     );
   }
 
-  // CAS 2: Voyage terminé
-  if (trajet.liveTrip && trajet.liveTrip.status === 'Terminé') {
-    return <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-200 text-gray-700 text-xs font-semibold rounded-full"><FiCheckCircle /> Terminé</span>;
+  // CAS 2: Voyage terminé ou annulé
+  if ((trajet.liveTrip && ['Terminé', 'Annulé'].includes(trajet.liveTrip.status)) || !trajet.isActive) {
+    const isCancelled = !trajet.isActive || trajet.liveTrip?.status === 'Annulé';
+    return <span className={`flex items-center gap-1.5 px-3 py-1 ${isCancelled ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-700'} text-xs font-semibold rounded-full`}>{isCancelled ? <FiXCircle /> : <FiCheckCircle />} {isCancelled ? 'Annulé' : 'Terminé'}</span>;
+  }
+  
+  // CAS 3: Voyage à venir (heure non passée)
+  if (now <= departureDateTime) {
+      return (
+        <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white w-32 justify-center" onClick={startTrip} disabled={processing || now < oneHourBefore}>
+          {processing ? <FiLoader className="animate-spin"/> : <><FiPlayCircle className="mr-1"/> Démarrer</>}
+        </Button>
+      );
   }
 
-  // CAS 3: Voyage en retard (heure de départ passée, mais pas démarré)
+  // CAS 4: Voyage en retard (heure passée, non démarré, toujours actif)
   if (isDelayedAndNotStarted) {
      return (
       <Menu as="div" className="relative inline-block text-left">
-        <Menu.Button as={Button} size="sm" className="bg-yellow-500 text-white hover:bg-yellow-600 w-32 justify-between">
-          Action Requise
-          <FiChevronDown className="-mr-1 ml-2 h-5 w-5" aria-hidden="true" />
-        </Menu.Button>
+        {renderMenuButton("Action Requise", "bg-yellow-500 text-white hover:bg-yellow-600")}
         <Transition as={Fragment} enter="transition ease-out duration-100" enterFrom="transform opacity-0 scale-95" enterTo="transform opacity-100 scale-100" leave="transition ease-in duration-75" leaveFrom="transform opacity-100 scale-100" leaveTo="transform opacity-0 scale-95">
           <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
             <div className="py-1">
-              {now <= oneHourAfter && ( // On peut encore démarrer jusqu'à 1h après
-                 <Menu.Item>
-                  {({ active }) => (
-                    <button onClick={() => handleStartTrip(trajet._id)} className={`${active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} group flex w-full items-center rounded-md px-2 py-2 text-sm`}>
-                      <FiPlayCircle className="mr-2 h-5 w-5 text-green-500" aria-hidden="true" /> Démarrer (en retard)
-                    </button>
-                  )}
-                </Menu.Item>
-              )}
-              <Menu.Item>
-                {({ active }) => (
-                  <button onClick={() => handleNotifyDelay(trajet._id)} className={`${active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} group flex w-full items-center rounded-md px-2 py-2 text-sm`}>
-                    <FiBell className="mr-2 h-5 w-5 text-blue-500" aria-hidden="true" /> Notifier du retard
-                  </button>
-                )}
-              </Menu.Item>
-              <Menu.Item>
-                 {({ active }) => (
-                  <button onClick={() => handleEndTrip(trajet.liveTrip?._id)} disabled={!trajet.liveTrip} className={`${active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} group flex w-full items-center rounded-md px-2 py-2 text-sm disabled:opacity-50`}>
-                     <FiTrash2 className="mr-2 h-5 w-5 text-red-500" aria-hidden="true" /> Annuler/Terminer
-                  </button>
-                )}
-              </Menu.Item>
+              {renderMenuItem("Démarrer (en retard)", <FiPlayCircle className="mr-2 h-5 w-5 text-green-500" />, startTrip)}
+              {renderMenuItem("Notifier du retard", <FiBell className="mr-2 h-5 w-5 text-blue-500" />, notifyDelay)}
+              {/* === LIGNE MODIFIÉE : Le bouton est maintenant toujours cliquable === */}
+              {renderMenuItem("Annuler le trajet", <FiXCircle className="mr-2 h-5 w-5 text-red-500" />, cancelTrajet)}
             </div>
           </Menu.Items>
         </Transition>
       </Menu>
     );
   }
-
-  // CAS 4: Prêt à partir (dans la fenêtre de temps)
-  if (isWithinStartWindow) {
-    return (
-      <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white w-32 justify-center" onClick={() => handleStartTrip(trajet._id)} disabled={processing}>
-        {processing ? <FiLoader className="animate-spin"/> : <><FiPlayCircle className="mr-1"/> Démarrer</>}
-      </Button>
-    );
-  }
-
-  // CAS 5: Par défaut (trajet trop dans le futur ou passé sans suivi)
-  return <span className="text-xs italic text-gray-400">À venir</span>;
+  
+  return null; // Cas par défaut
 };
 
-
 // ====================================================================
-// COMPOSANT PRINCIPAL DE LA PAGE (légèrement modifié)
+// COMPOSANT PRINCIPAL DE LA PAGE (inchangé par rapport à la version précédente)
 // ====================================================================
-const TrajetListPage = () => {
+const TrajetListPage = ({
+  // ... (le reste du composant TrajetListPage est identique à la version précédente)
+  // Vous pouvez simplement remplacer le composant ActionMenu et ajouter la nouvelle fonction handleApiCall
+  // Le reste du JSX de la page n'a pas besoin de changer.
+}) => {
   const [allTrajets, setAllTrajets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -164,7 +165,8 @@ const TrajetListPage = () => {
   const ITEMS_PER_PAGE = 8;
 
   const fetchTrajets = useCallback(() => {
-    setLoading(true);
+    // On met le loader global, mais pas le `isActionProcessing` qui est pour les boutons
+    setLoading(true); 
     api.get(`/admin/trajets?status=${statusFilter}`)
       .then(res => setAllTrajets(Array.isArray(res.data) ? res.data : []))
       .catch(err => setError(err.response?.data?.message || 'Erreur serveur'))
@@ -174,11 +176,11 @@ const TrajetListPage = () => {
   useEffect(fetchTrajets, [fetchTrajets]);
 
   const handleDelete = async (id, nomTrajet) => {
-    if (window.confirm(`Supprimer le trajet ${nomTrajet} ?`)) {
+    if (window.confirm(`Supprimer le trajet ${nomTrajet} ? Cette action est irréversible.`)) {
         setIsActionProcessing(true);
         try {
             await api.delete(`/admin/trajets/${id}`);
-            fetchTrajets();
+            fetchTrajets(); // Rafraîchit la liste après la suppression
         } catch(err) { alert("Erreur: " + err.response?.data?.message) }
         finally { setIsActionProcessing(false) }
     }
@@ -230,7 +232,7 @@ const TrajetListPage = () => {
                     <div>
                         <div className="flex justify-between items-start">
                             <div className="font-bold text-gray-800 flex items-center gap-2"><FaRoute/> {t.villeDepart} → {t.villeArrivee}</div>
-                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${t.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{t.isActive ? 'Actif' : 'Inactif'}</span>
+                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${t.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{t.isActive ? 'Actif' : 'Inactif'}</span>
                         </div>
                         <p className="text-sm text-gray-500 mt-1">{t.compagnie}</p>
                     </div>
@@ -241,7 +243,6 @@ const TrajetListPage = () => {
                     <div className="flex justify-between items-center">
                         <p className="text-xs text-gray-500">Bus: <span className="font-semibold">{t.bus?.numero || 'Non assigné'}</span></p>
                         <div className="flex gap-2 items-center">
-                            {/* Utilisation du nouveau menu d'actions */}
                             <ActionMenu 
                                 trajet={t} 
                                 onActionStart={() => setIsActionProcessing(true)} 
