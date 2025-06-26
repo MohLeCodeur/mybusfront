@@ -1,4 +1,4 @@
-// src/context/NotificationContext.jsx (CODE CORRIGÉ)
+// src/context/NotificationContext.jsx
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { io } from 'socket.io-client';
@@ -11,46 +11,56 @@ export const NotificationProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const { user } = useContext(AuthContext);
 
-    // Initialisation du socket
+    // ==========================================================
+    // === DÉBUT DE LA CORRECTION : AJOUT D'UN DÉCLENCHEUR
+    // ==========================================================
+    const [refetchTrigger, setRefetchTrigger] = useState(0);
+    // ==========================================================
+    // === FIN DE LA CORRECTION
+    // ==========================================================
+
     useEffect(() => {
         const newSocket = io(import.meta.env.VITE_SOCKET_URL || 'https://mybusback.onrender.com');
         setSocket(newSocket);
         return () => newSocket.disconnect();
     }, []);
 
-    // Envoi de l'ID utilisateur au serveur
     useEffect(() => {
         if (socket && user) {
             socket.emit('addNewUser', user._id);
         }
     }, [socket, user]);
 
-    // Réception des notifications
     useEffect(() => {
         if (socket) {
             socket.on('getNotification', (data) => {
                 setNotifications(prev => [data, ...prev]);
-                
-                // ==============================================================
-                // === DÉBUT DE LA CORRECTION
-                // ==============================================================
-                // On vérifie que l'API existe ET que la permission a été accordée
                 if ('Notification' in window && Notification.permission === 'granted') {
                     new Notification(data.title, { body: data.message });
                 }
-                // ==============================================================
-                // === FIN DE LA CORRECTION
-                // ==============================================================
             });
+
+            // ==========================================================
+            // === DÉBUT DE LA CORRECTION : ÉCOUTE DE L'ÉVÉNEMENT DE MISE À JOUR
+            // ==========================================================
+            socket.on('tripStateChanged', (data) => {
+                console.log('Received tripStateChanged for trajet:', data.trajetId);
+                // On incrémente le déclencheur pour forcer les composants à se rafraîchir
+                setRefetchTrigger(prev => prev + 1);
+            });
+            // ==========================================================
+            // === FIN DE LA CORRECTION
+            // ==========================================================
         }
     }, [socket]);
 
     const markAsRead = () => {
-        // Logique future pour marquer comme lu
+        // Logique future
     };
 
     return (
-        <NotificationContext.Provider value={{ notifications, markAsRead }}>
+        // On expose le déclencheur dans la valeur du contexte
+        <NotificationContext.Provider value={{ notifications, markAsRead, refetchTrigger }}>
             {children}
         </NotificationContext.Provider>
     );

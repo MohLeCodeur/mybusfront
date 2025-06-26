@@ -1,16 +1,15 @@
-// src/pages/public/TrackingMapPage.jsx (VERSION FINALE AVEC ICÔNES PRO CORRIGÉES)
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '../../api';
+import NotificationContext from '../../context/NotificationContext';
 import { FiLoader, FiArrowLeft, FiMap, FiClock, FiCheckCircle, FiSunrise, FiSunset, FiNavigation2, FiUser, FiShare2, FiAlertTriangle } from 'react-icons/fi';
 import ReactDOMServer from 'react-dom/server';
 
 // ====================================================================
-// --- DÉBUT : CORRECTION FINALE DES ICÔNES REACT PROFESSIONNELLES ---
+// Définition des icônes Leaflet personnalisées
 // ====================================================================
 const createDivIcon = (iconComponent, options = {}) => {
   return L.divIcon({
@@ -22,43 +21,32 @@ const createDivIcon = (iconComponent, options = {}) => {
   });
 };
 
-// Icône du Bus
 const busIcon = createDivIcon(
-  // On fixe la taille du conteneur avec des classes Tailwind pour la cohérence
   <div className="relative flex items-center justify-center w-[40px] h-[40px]">
     <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping"></div>
     <div className="relative flex items-center justify-center w-8 h-8 bg-blue-600 rounded-full shadow-lg">
       <FiNavigation2 size={20} className="text-white" />
     </div>
   </div>,
-  // On ancre au centre de l'icône, car c'est un cercle
   { size: 40, anchorX: 20, anchorY: 20 }
 );
 
-// Icône de l'utilisateur
 const userIcon = createDivIcon(
-  <div className="p-2 bg-pink-500 rounded-full shadow-lg">
-    <FiUser size={20} className="text-white"/>
-  </div>
+  <div className="p-2 bg-pink-500 rounded-full shadow-lg"><FiUser size={20} className="text-white"/></div>,
+  { size: 36, anchorX: 18, anchorY: 18 }
 );
 
-// Icônes de départ et d'arrivée
 const startIcon = createDivIcon(
-  <div className="p-2 bg-green-500 rounded-full shadow-lg">
-    <FiSunrise size={20} className="text-white"/>
-  </div>
+  <div className="p-2 bg-green-500 rounded-full shadow-lg"><FiSunrise size={20} className="text-white"/></div>,
+  { size: 36, anchorX: 18, anchorY: 18 }
 );
 
 const endIcon = createDivIcon(
-  <div className="p-2 bg-red-500 rounded-full shadow-lg">
-    <FiSunset size={20} className="text-white"/>
-  </div>
+  <div className="p-2 bg-red-500 rounded-full shadow-lg"><FiSunset size={20} className="text-white"/></div>,
+  { size: 36, anchorX: 18, anchorY: 18 }
 );
-// ====================================================================
-// --- FIN DE LA CORRECTION
-// ====================================================================
 
-
+// Composant pour centrer la carte
 const ChangeView = ({ center, zoom }) => {
     const map = useMap();
     useEffect(() => {
@@ -66,13 +54,21 @@ const ChangeView = ({ center, zoom }) => {
     }, [center, zoom, map]);
     return null;
 };
+
+// Composant pour afficher les informations dans la barre latérale
 const InfoCard = ({ icon, title, value }) => (
-    <div><p className="text-xs text-gray-500 flex items-center gap-1">{icon} {title}</p><p className="font-bold text-lg text-gray-800">{value}</p></div>
+    <div>
+        <p className="text-xs text-gray-500 flex items-center gap-1">{icon} {title}</p>
+        <p className="font-bold text-lg text-gray-800">{value}</p>
+    </div>
 );
 
+// ====================================================================
+// COMPOSANT PRINCIPAL DE LA PAGE
+// ====================================================================
 const TrackingMapPage = () => {
-    // Toute la logique (états, useEffects, etc.) est conservée
     const { liveTripId } = useParams();
+    const { refetchTrigger } = useContext(NotificationContext);
     const [liveTrip, setLiveTrip] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -82,17 +78,18 @@ const TrackingMapPage = () => {
     const [calculatingRoute, setCalculatingRoute] = useState(false);
     const [watchId, setWatchId] = useState(null);
 
-    useEffect(() => {
-        const fetchTripData = () => {
-            api.get(`/tracking/live/${liveTripId}`)
-                .then(res => setLiveTrip(res.data))
-                .catch(err => setError(err.response?.data?.message || "Erreur de chargement."))
-                .finally(() => { if (loading) setLoading(false); });
-        };
-        fetchTripData();
-        const interval = setInterval(fetchTripData, 20000);
-        return () => clearInterval(interval);
+    const fetchTripData = useCallback(() => {
+        api.get(`/tracking/live/${liveTripId}`)
+            .then(res => setLiveTrip(res.data))
+            .catch(err => setError(err.response?.data?.message || "Erreur de chargement."))
+            .finally(() => { if (loading) setLoading(false); });
     }, [liveTripId, loading]);
+
+    useEffect(() => {
+        fetchTripData();
+        const lightPollInterval = setInterval(fetchTripData, 30000);
+        return () => clearInterval(lightPollInterval);
+    }, [refetchTrigger, fetchTripData]);
 
     const toggleUserTracking = () => {
         if (!navigator.geolocation) {
@@ -113,9 +110,7 @@ const TrackingMapPage = () => {
                 setUserPosition([latitude, longitude]);
                 setGeoError('');
             },
-            () => {
-                setGeoError("Impossible de suivre votre position. Veuillez autoriser l'accès.");
-            },
+            () => { setGeoError("Impossible de suivre votre position. Veuillez autoriser l'accès."); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
         setWatchId(id);
@@ -136,28 +131,39 @@ const TrackingMapPage = () => {
     }, [userPosition, liveTrip?.trajetId?.coordsArrivee]);
 
     useEffect(() => {
-        return () => {
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-            }
-        };
+        return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
     }, [watchId]);
 
     if (loading) return <div className="flex justify-center items-center h-screen"><FiLoader className="animate-spin text-4xl text-blue-500"/></div>;
     if (error) return <div className="text-center p-8 text-red-500 bg-red-50">{error}</div>;
     if (!liveTrip) return <div className="text-center p-8">Aucun suivi trouvé.</div>;
 
+    if (liveTrip.status === 'Terminé') {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen bg-gray-50 text-center p-4">
+                <FiCheckCircle className="text-6xl text-green-500 mb-4" />
+                <h1 className="text-3xl font-bold text-gray-800">Voyage Terminé</h1>
+                <p className="text-gray-600 mt-2">Le bus est arrivé à destination. Merci d'avoir voyagé avec MyBus !</p>
+                <Link to="/dashboard" className="mt-8 px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
+                    Retour à Mon Compte
+                </Link>
+            </div>
+        );
+    }
+    
     const busPosition = liveTrip.currentPosition ? [liveTrip.currentPosition.lat, liveTrip.currentPosition.lng] : null;
     const busRouteCoordinates = liveTrip.routeGeoJSON?.coordinates.map(c => [c[1], c[0]]);
     const userRouteCoordinates = userRoute?.geojson?.coordinates.map(c => [c[1], c[0]]);
     const startPosition = liveTrip.trajetId?.coordsDepart ? [liveTrip.trajetId.coordsDepart.lat, liveTrip.trajetId.coordsDepart.lng] : null;
     const endPosition = liveTrip.trajetId?.coordsArrivee ? [liveTrip.trajetId.coordsArrivee.lat, liveTrip.trajetId.coordsArrivee.lng] : null;
     const defaultCenter = startPosition || [12.6392, -8.0029];
-
+    
     return (
         <div className="h-screen w-screen flex flex-col lg:grid lg:grid-cols-4">
             <aside className="h-1/2 lg:h-full lg:col-span-1 bg-white p-6 flex flex-col shadow-2xl z-10 overflow-y-auto">
-                <Link to="/dashboard" className="flex items-center gap-2 text-sm text-blue-600 hover:underline mb-6 shrink-0"><FiArrowLeft /> Mon Compte</Link>
+                <Link to="/dashboard" className="flex items-center gap-2 text-sm text-blue-600 hover:underline mb-6 shrink-0">
+                    <FiArrowLeft /> Mon Compte
+                </Link>
                 <div className="mb-4">
                     <div className="flex items-center gap-4"><FiSunrise className="text-2xl text-green-500 shrink-0"/><div><p className="text-xs text-gray-500">Départ</p><h2 className="text-xl font-bold text-gray-800">{liveTrip.originCityName}</h2></div></div>
                     <div className="h-8 border-l-2 border-dashed border-gray-300 ml-3 my-1"></div>
@@ -192,7 +198,7 @@ const TrackingMapPage = () => {
             <main className="h-1/2 lg:h-full lg:col-span-3 z-0">
                 <MapContainer center={busPosition || defaultCenter} zoom={7} className="h-full w-full">
                     <ChangeView center={userPosition || busPosition || defaultCenter} />
-                    <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+                    <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>' />
                     
                     {busRouteCoordinates && <Polyline positions={busRouteCoordinates} color="#1d4ed8" weight={6} opacity={0.8} />}
                     {busPosition && <Marker position={busPosition} icon={busIcon}><Popup>Position Actuelle du Bus</Popup></Marker>}

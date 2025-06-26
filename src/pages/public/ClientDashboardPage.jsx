@@ -1,67 +1,92 @@
-// src/pages/public/ClientDashboardPage.jsx (NOUVELLE VERSION AVEC DESIGN AMÉLIORÉ)
-
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
 import AuthContext from '../../context/AuthContext';
+import NotificationContext from '../../context/NotificationContext';
 import { FiClock, FiMapPin, FiLoader, FiCheckCircle, FiArchive, FiPlusCircle, FiCalendar, FiSend, FiTrendingUp, FiAward, FiStar } from 'react-icons/fi';
 
-// ==================================================================
-// WIDGETS INTERNES (Redésignés et Nouveaux)
-// ==================================================================
-
-// --- WIDGET 1 : Compte à rebours (design inchangé, déjà bon) ---
+// ====================================================================
+// WIDGET INTERNE : Compte à rebours
+// ====================================================================
 const CountdownDisplay = ({ targetDateTime }) => {
     const [timeLeft, setTimeLeft] = useState(targetDateTime.getTime() - new Date().getTime());
-    useEffect(() => { if (timeLeft <= 0) return; const timerId = setTimeout(() => { setTimeLeft(timeLeft - 1000); }, 1000); return () => clearTimeout(timerId); }, [timeLeft]);
+    
+    useEffect(() => {
+        if (timeLeft <= 0) return;
+        const timerId = setTimeout(() => {
+            setTimeLeft(timeLeft - 1000);
+        }, 1000);
+        return () => clearTimeout(timerId);
+    }, [timeLeft]);
     
     if (timeLeft <= 0) {
-        return (
-            <div className="text-center">
-                <p className="text-2xl font-bold text-green-500 animate-pulse">Départ imminent !</p>
-                <p className="text-sm text-gray-500">Préparez-vous pour votre voyage.</p>
-            </div>
-        );
+        return <div className="text-2xl font-bold text-green-500 animate-pulse">Départ imminent !</div>;
     }
     
-    const d = Math.floor(timeLeft / (36e5 * 24)), h = Math.floor((timeLeft / 36e5) % 24), m = Math.floor((timeLeft / 6e4) % 60), s = Math.floor((timeLeft / 1e3) % 60);
-    const formatTime = (v, l) => (<div className="text-center w-16"><div className="text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-500 to-blue-500">{String(v).padStart(2, '0')}</div><div className="text-xs uppercase text-gray-400 tracking-wider mt-1">{l}</div></div>);
+    const d = Math.floor(timeLeft / (36e5 * 24));
+    const h = Math.floor((timeLeft / 36e5) % 24);
+    const m = Math.floor((timeLeft / 6e4) % 60);
+    const s = Math.floor((timeLeft / 1e3) % 60);
     
-    return (<div className="flex justify-center gap-2 sm:gap-4">{d > 0 && formatTime(d, 'Jours')}{(d > 0 || h > 0) && formatTime(h, 'Heures')}{(d > 0 || h > 0 || m > 0) && formatTime(m, 'Minutes')}{formatTime(s, 'Secondes')}</div>);
+    const formatTime = (value, label) => (
+        <div className="text-center w-16">
+            <div className="text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-500 to-blue-500">
+                {String(value).padStart(2, '0')}
+            </div>
+            <div className="text-xs uppercase text-gray-400 tracking-wider mt-1">{label}</div>
+        </div>
+    );
+    
+    return (
+        <div className="flex justify-center gap-2 sm:gap-4">
+            {d > 0 && formatTime(d, 'Jours')}
+            {(d > 0 || h > 0) && formatTime(h, 'Heures')}
+            {(d > 0 || h > 0 || m > 0) && formatTime(m, 'Minutes')}
+            {formatTime(s, 'Secondes')}
+        </div>
+    );
 };
 
-// --- WIDGET 2 : Carte de Voyage (design inchangé, déjà bon) ---
+// ====================================================================
+// WIDGET INTERNE : Carte de Réservation dans l'historique
+// ====================================================================
 const TripCard = ({ reservation }) => {
     if (!reservation?.trajet) return null;
-    const { trajet } = reservation;
-    const isFuture = new Date(`${new Date(trajet.dateDepart).toISOString().split('T')[0]}T${trajet.heureDepart}:00Z`) > new Date();
+    const { trajet, liveTrip } = reservation;
+    
+    let statusInfo = { text: 'Terminé', icon: <FiCheckCircle size={13}/>, style: 'bg-green-100 text-green-700' };
+    const departureDateTime = new Date(`${new Date(trajet.dateDepart).toISOString().split('T')[0]}T${trajet.heureDepart}:00Z`);
 
+    if (liveTrip && liveTrip.status === 'En cours') {
+        statusInfo = { text: 'En cours', icon: <FiClock size={13}/>, style: 'bg-blue-100 text-blue-700 animate-pulse' };
+    } else if (departureDateTime > new Date()) {
+        statusInfo = { text: 'À venir', icon: <FiSend size={13}/>, style: 'bg-pink-100 text-pink-700' };
+    }
+    
     return (
         <li className="flex flex-col sm:flex-row justify-between items-start gap-4 p-4 border rounded-xl hover:bg-gradient-to-r hover:from-pink-50/50 hover:to-blue-50/50 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
             <div className="flex items-center gap-4 flex-grow">
-                <div className={`shrink-0 h-12 w-12 rounded-lg flex flex-col items-center justify-center ${isFuture ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                <div className={`shrink-0 h-12 w-12 rounded-lg flex flex-col items-center justify-center ${departureDateTime > new Date() ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
                     <span className="text-xs font-bold">{new Date(trajet.dateDepart).toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase()}</span>
                     <span className="text-lg font-bold">{new Date(trajet.dateDepart).getDate()}</span>
                 </div>
                 <div>
                     <p className="font-bold text-gray-800">{trajet.villeDepart} → {trajet.villeArrivee}</p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                        <span className="flex items-center gap-1.5"><FiClock size={13}/> {trajet.heureDepart}</span>
-                    </div>
+                    <p className="text-sm text-gray-500 mt-1">{trajet.compagnie}</p>
                 </div>
             </div>
-            {isFuture ? (
-                 <span className="shrink-0 mt-2 sm:mt-0 flex items-center gap-1.5 px-3 py-1 bg-pink-100 text-pink-700 text-xs font-semibold rounded-full"><FiSend size={13}/> À venir</span>
-            ) : (
-                <span className="shrink-0 mt-2 sm:mt-0 flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full"><FiCheckCircle size={13}/> Terminé</span>
-            )}
+            <span className={`shrink-0 mt-2 sm:mt-0 flex items-center gap-1.5 px-3 py-1 ${statusInfo.style} text-xs font-semibold rounded-full`}>
+                {statusInfo.icon} {statusInfo.text}
+            </span>
         </li>
     );
 };
 
-// --- WIDGET 3 : Voyage à la Une (design inchangé, déjà bon) ---
+// ====================================================================
+// WIDGET INTERNE : Voyage à la une
+// ====================================================================
 const FeaturedTripWidget = ({ data }) => {
-    if (!data || !data.reservation) {
+    if (!data) {
         return (
             <div className="text-center p-8 bg-gradient-to-br from-pink-50 via-blue-50 to-white rounded-2xl flex flex-col items-center justify-center h-full">
                 <FiMapPin className="text-5xl text-blue-300 mb-4"/>
@@ -73,49 +98,47 @@ const FeaturedTripWidget = ({ data }) => {
         );
     }
     
-    const { trajet } = data.reservation;
+    const { trajet, liveTrip } = data;
     const departureDateTime = new Date(`${new Date(trajet.dateDepart).toISOString().split('T')[0]}T${trajet.heureDepart}:00Z`);
     const isFuture = departureDateTime > new Date();
+    const isLive = liveTrip && liveTrip.status === 'En cours';
 
     return (
         <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 h-full flex flex-col">
             <div className="p-6">
-                <p className="text-sm font-semibold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-blue-500">{isFuture ? "VOTRE PROCHAIN VOYAGE" : "VOYAGE EN COURS"}</p>
+                <p className="text-sm font-semibold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-blue-500">{isLive ? "VOYAGE EN COURS" : "VOTRE PROCHAIN VOYAGE"}</p>
                 <h3 className="font-bold text-3xl text-gray-800 mt-1">{trajet.villeDepart} → {trajet.villeArrivee}</h3>
                 <p className="text-sm text-gray-500 mt-1">{new Date(trajet.dateDepart).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à {trajet.heureDepart}</p>
             </div>
             <div className="flex-grow flex items-center justify-center p-6 bg-gray-50/50">
-                {isFuture ? (
+                {isLive ? (
+                    <Link to={`/tracking/map/${liveTrip._id}`} className="inline-block px-8 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-lg hover:shadow-green-400/50 text-base animate-pulse">
+                        <FiMapPin className="inline mr-2"/> Suivre en Temps Réel
+                    </Link>
+                ) : isFuture ? (
                     <CountdownDisplay targetDateTime={departureDateTime} />
                 ) : (
-                    data.liveTrip ? (
-                        <Link to={`/tracking/map/${data.liveTrip._id}`} className="inline-block px-8 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-lg hover:shadow-green-400/50 text-base">
-                            <FiMapPin className="inline mr-2"/> Suivre en Temps Réel
-                        </Link>
-                    ) : (
-                        <div className="p-4 bg-gray-100 rounded-lg flex items-center justify-center gap-3 text-gray-600">Le suivi pour ce voyage est indisponible.</div>
-                    )
+                    <div className="p-4 bg-gray-100 rounded-lg text-center text-gray-600">
+                        <h4 className="font-semibold">Veuillez patienter...</h4>
+                        <p className="text-sm">Le départ n'a pas encore été lancé par la compagnie.</p>
+                    </div>
                 )}
             </div>
         </div>
     );
 };
 
-// ==========================================================
-// === NOUVEAU WIDGET 4 : STATISTIQUES (DESIGN CORRIGÉ)
-// ==========================================================
+// ====================================================================
+// WIDGET INTERNE : Statistiques
+// ====================================================================
 const StatsWidget = ({ upcomingCount, pastCount }) => {
-    const totalCount = (upcomingCount || 0) + (pastCount || 0);
-
     const StatItem = ({ value, label, icon, gradient }) => (
         <div className={`relative p-4 rounded-xl overflow-hidden ${gradient}`}>
             <div className="relative z-10">
                 <p className="text-3xl font-bold text-white">{value}</p>
                 <p className="text-sm text-white/80">{label}</p>
             </div>
-            <div className="absolute -bottom-2 -right-2 text-white/20 text-5xl">
-                {icon}
-            </div>
+            <div className="absolute -bottom-2 -right-2 text-white/20 text-5xl">{icon}</div>
         </div>
     );
 
@@ -123,7 +146,7 @@ const StatsWidget = ({ upcomingCount, pastCount }) => {
         <div className="bg-gradient-to-br from-blue-50 to-pink-50 rounded-2xl shadow-xl border border-white p-6 h-full">
             <h2 className="text-2xl font-bold text-gray-700 mb-4 flex items-center gap-3"><FiTrendingUp/> En bref</h2>
             <div className="space-y-4">
-                <StatItem value={totalCount} label="Voyages au total" icon={<FiAward />} gradient="bg-gradient-to-br from-blue-500 to-blue-400"/>
+                <StatItem value={(upcomingCount || 0) + (pastCount || 0)} label="Voyages au total" icon={<FiAward />} gradient="bg-gradient-to-br from-blue-500 to-blue-400"/>
                 <StatItem value={upcomingCount} label="Voyages à venir" icon={<FiSend />} gradient="bg-gradient-to-br from-pink-500 to-fuchsia-500" />
                 <StatItem value={pastCount} label="Voyages terminés" icon={<FiArchive />} gradient="bg-gradient-to-br from-gray-600 to-gray-500" />
             </div>
@@ -131,29 +154,37 @@ const StatsWidget = ({ upcomingCount, pastCount }) => {
     );
 };
 
-
-// --- COMPOSANT PRINCIPAL DE LA PAGE (RESTRUCTURÉ) ---
+// ====================================================================
+// COMPOSANT PRINCIPAL DE LA PAGE
+// ====================================================================
 const ClientDashboardPage = () => {
     const { user } = useContext(AuthContext);
+    const { refetchTrigger } = useContext(NotificationContext);
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('upcoming');
 
-    useEffect(() => {
+    const fetchDashboardData = useCallback(() => {
+        // Met le loader seulement au premier chargement pour éviter les flashs
+        if (!dashboardData) setLoading(true); 
         api.get('/dashboard/client-data')
             .then(res => setDashboardData(res.data))
             .catch(console.error)
             .finally(() => setLoading(false));
-    }, []);
+    }, [dashboardData]);
 
-    if (loading) return <div className="flex justify-center items-center h-screen"><FiLoader className="animate-spin text-4xl text-blue-500"/></div>;
+    useEffect(() => {
+        fetchDashboardData();
+    }, [refetchTrigger, fetchDashboardData]);
+
+    if (loading) {
+        return <div className="flex justify-center items-center h-screen"><FiLoader className="animate-spin text-4xl text-blue-500"/></div>;
+    }
 
     const TabButton = ({ tabName, label, icon, count }) => (
-        <button
-            onClick={() => setActiveTab(tabName)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                activeTab === tabName ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-200'
-            }`}
+        <button 
+            onClick={() => setActiveTab(tabName)} 
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${activeTab === tabName ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-200'}`}
         >
             {icon} {label} <span className="bg-white/20 text-xs rounded-full px-2 py-0.5">{count}</span>
         </button>
