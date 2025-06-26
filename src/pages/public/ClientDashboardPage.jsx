@@ -83,7 +83,7 @@ const TripCard = ({ reservation }) => {
 };
 
 // ====================================================================
-// WIDGET INTERNE : Voyage à la une
+// WIDGET INTERNE : Voyage à la une (LOGIQUE CORRIGÉE)
 // ====================================================================
 const FeaturedTripWidget = ({ data }) => {
     if (!data) {
@@ -100,13 +100,18 @@ const FeaturedTripWidget = ({ data }) => {
     
     const { trajet, liveTrip } = data;
     const departureDateTime = new Date(`${new Date(trajet.dateDepart).toISOString().split('T')[0]}T${trajet.heureDepart}:00Z`);
+    
     const isFuture = departureDateTime > new Date();
     const isLive = liveTrip && liveTrip.status === 'En cours';
+    // --- NOUVELLE CONDITION POUR UN VOYAGE TERMINÉ ---
+    const isFinished = liveTrip && liveTrip.status === 'Terminé';
 
     return (
         <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 h-full flex flex-col">
             <div className="p-6">
-                <p className="text-sm font-semibold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-blue-500">{isLive ? "VOYAGE EN COURS" : "VOTRE PROCHAIN VOYAGE"}</p>
+                <p className="text-sm font-semibold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-blue-500">
+                    {isLive ? "VOYAGE EN COURS" : isFinished ? "VOYAGE TERMINÉ" : "VOTRE PROCHAIN VOYAGE"}
+                </p>
                 <h3 className="font-bold text-3xl text-gray-800 mt-1">{trajet.villeDepart} → {trajet.villeArrivee}</h3>
                 <p className="text-sm text-gray-500 mt-1">{new Date(trajet.dateDepart).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à {trajet.heureDepart}</p>
             </div>
@@ -115,6 +120,12 @@ const FeaturedTripWidget = ({ data }) => {
                     <Link to={`/tracking/map/${liveTrip._id}`} className="inline-block px-8 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-lg hover:shadow-green-400/50 text-base animate-pulse">
                         <FiMapPin className="inline mr-2"/> Suivre en Temps Réel
                     </Link>
+                ) : isFinished ? ( // --- NOUVEAU BLOC D'AFFICHAGE POUR LE STATUT "TERMINÉ" ---
+                    <div className="text-center text-green-600">
+                        <FiCheckCircle className="mx-auto text-5xl mb-2" />
+                        <h4 className="font-bold text-lg">Voyage Terminé</h4>
+                        <p className="text-sm text-gray-500">Ce voyage est arrivé à destination.</p>
+                    </div>
                 ) : isFuture ? (
                     <CountdownDisplay targetDateTime={departureDateTime} />
                 ) : (
@@ -165,7 +176,6 @@ const ClientDashboardPage = () => {
     const [activeTab, setActiveTab] = useState('upcoming');
 
     const fetchDashboardData = useCallback(() => {
-        // Met le loader seulement au premier chargement pour éviter les flashs
         if (!dashboardData) setLoading(true); 
         api.get('/dashboard/client-data')
             .then(res => setDashboardData(res.data))
