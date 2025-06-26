@@ -41,7 +41,7 @@ const TrajetListPage = () => {
   };
 
   // ==========================================================
-  // === NOUVELLES FONCTIONS DE GESTION MANUELLE
+  // === NOUVELLES FONCTIONS DE GESTION MANUELLE MOHXL
   // ==========================================================
   const handleAction = async (action, trajetId, successMessage) => {
     try {
