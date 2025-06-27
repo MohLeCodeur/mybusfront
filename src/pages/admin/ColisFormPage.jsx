@@ -40,17 +40,22 @@ const ColisFormPage = () => {
     useEffect(() => {
         const loadInitialData = async () => {
             try {
+                // ====================================================================
+                // --- DÉBUT DE LA CORRECTION ---
+                // ====================================================================
                 // Charger les trajets disponibles uniquement en mode création
                 if (!isEditMode) {
-                    const trajetsRes = await api.get('/public/trajets/search');
-                    if (trajetsRes.data && Array.isArray(trajetsRes.data.docs)) {
-                        // Filtrer uniquement les trajets futurs
-                        const futureTrajects = trajetsRes.data.docs.filter(t => 
-                            new Date(t.dateDepart) > new Date()
-                        );
-                        setTrajets(futureTrajects);
+                    // On appelle le nouvel endpoint dédié qui renvoie TOUS les trajets futurs
+                    const trajetsRes = await api.get('/admin/trajets/available-for-colis');
+                    
+                    // La réponse est un simple tableau, pas un objet paginé
+                    if (Array.isArray(trajetsRes.data)) {
+                        setTrajets(trajetsRes.data);
                     }
                 }
+                // ====================================================================
+                // --- FIN DE LA CORRECTION ---
+                // ====================================================================
 
                 // Charger les données du colis en mode édition
                 if (isEditMode) {
