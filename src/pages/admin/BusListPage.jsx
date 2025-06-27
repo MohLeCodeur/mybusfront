@@ -1,10 +1,11 @@
 // src/pages/admin/BusListPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDebounce } from 'use-debounce';
 import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { FiPlus, FiEdit, FiTrash2, FiLoader, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiLoader, FiChevronLeft, FiChevronRight, FiSearch } from 'react-icons/fi';
 import { FaBus } from 'react-icons/fa';
 
 // --- Composants Internes (déjà existants) ---
@@ -28,43 +29,54 @@ const getStatusBadge = (status) => {
 
 // --- Composant Principal ---
 const BusListPage = () => {
-  const [allBuses, setAllBuses] = useState([]); // Stocke TOUS les bus
+  const navigate = useNavigate();
+  const [data, setData] = useState({ docs: [], total: 0, pages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
-  // --- NOUVEAUX ÉTATS POUR LA PAGINATION ---
-  const [currentPage, setCurrentPage] = useState(1);
-  const BUSES_PER_PAGE = 7; // Nombre de bus à afficher par page
-  // ------------------------------------
+  const [filters, setFilters] = useState({
+    search: '',
+    etat: '',
+    sortBy: 'numero_asc',
+    page: 1,
+  });
+  const [debouncedSearch] = useDebounce(filters.search, 500);
 
-  const fetchBuses = () => {
+  const fetchBuses = useCallback(() => {
     setLoading(true);
-    api.get('/admin/bus')
-      .then(res => setAllBuses(Array.isArray(res.data) ? res.data : []))
+    const params = new URLSearchParams({
+        search: debouncedSearch,
+        etat: filters.etat,
+        sortBy: filters.sortBy,
+        page: filters.page,
+        limit: 7, // Nombre de bus par page
+    });
+    api.get(`/admin/bus?${params.toString()}`)
+      .then(res => setData(res.data))
       .catch(err => setError(err.response?.data?.message || 'Erreur serveur'))
       .finally(() => setLoading(false));
-  };
+  }, [debouncedSearch, filters.etat, filters.sortBy, filters.page]);
+
+  useEffect(fetchBuses, [fetchBuses]);
   
-  useEffect(fetchBuses, []);
+  const handlePageChange = (newPage) => {
+    setFilters(prev => ({...prev, page: newPage}));
+  }
+  
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({...prev, [key]: value, page: 1}));
+  }
 
   const handleDelete = async (id, numero) => {
     if (window.confirm(`Supprimer le bus n° ${numero} ?`)) {
       try {
         await api.delete(`/admin/bus/${id}`);
-        fetchBuses(); // Rafraîchir la liste complète
+        fetchBuses();
       } catch (err) {
         alert("Erreur: " + (err.response?.data?.message || "Impossible de supprimer le bus."));
       }
     }
   };
-
-  // --- LOGIQUE DE PAGINATION ---
-  const indexOfLastBus = currentPage * BUSES_PER_PAGE;
-  const indexOfFirstBus = indexOfLastBus - BUSES_PER_PAGE;
-  const currentBuses = allBuses.slice(indexOfFirstBus, indexOfLastBus); // La "tranche" de bus à afficher
-  const totalPages = Math.ceil(allBuses.length / BUSES_PER_PAGE);
-  // -------------------------
 
   return (
     <div className="space-y-6">
@@ -73,15 +85,38 @@ const BusListPage = () => {
             <h1 className="text-3xl font-bold text-gray-800">Gestion de la Flotte</h1>
             <p className="text-gray-500 mt-1">Supervisez et gérez tous les bus de votre compagnie.</p>
         </div>
-        <Button onClick={() => navigate('/admin/bus/new')} className="bg-gradient-to-r from-pink-500 to-blue-500 text-white shadow-lg hover:shadow-blue-500/50">
+        <Button onClick={() => navigate('/admin/bus/new')} className="bg-gradient-to-r from-pink-500 to-blue-500 text-white shadow-lg">
           <FiPlus className="mr-2" /> Ajouter un Nouveau Bus
         </Button>
       </div>
 
-      <Card className="shadow-xl border-t-4 border-blue-500">
+      <Card className="shadow-xl">
         <CardHeader>
-          <CardTitle>Liste des Bus ({allBuses.length})</CardTitle>
-          <CardDescription>Cliquez sur un bus pour le modifier ou le supprimer.</CardDescription>
+          <CardTitle>Liste des Bus ({loading ? '...' : data.total})</CardTitle>
+          <div className="mt-4 flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-grow">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Rechercher par numéro..."
+                value={filters.search}
+                onChange={e => handleFilterChange('search', e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <select value={filters.etat} onChange={e => handleFilterChange('etat', e.target.value)} className="border-gray-300 rounded-md text-sm p-2 bg-white">
+              <option value="">Tous les états</option>
+              <option value="en service">En service</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="hors service">Hors service</option>
+            </select>
+            <select value={filters.sortBy} onChange={e => handleFilterChange('sortBy', e.target.value)} className="border-gray-300 rounded-md text-sm p-2 bg-white">
+              <option value="numero_asc">Trier par N° (A-Z)</option>
+              <option value="numero_desc">Trier par N° (Z-A)</option>
+              <option value="capacite_asc">Trier par Capacité (basse)</option>
+              <option value="capacite_desc">Trier par Capacité (haute)</option>
+            </select>
+          </div>
         </CardHeader>
         <CardContent>
           {loading && <div className="text-center p-8"><FiLoader className="animate-spin mx-auto text-3xl text-blue-500" /></div>}
@@ -99,7 +134,7 @@ const BusListPage = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {currentBuses.length > 0 ? currentBuses.map(bus => (
+                  {data.docs.length > 0 ? data.docs.map(bus => (
                     <tr key={bus._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4"><div className="flex items-center gap-3"><FaBus className="text-blue-500 text-xl"/><span className="font-semibold text-gray-800">{bus.numero}</span></div></td>
                       <td className="px-6 py-4"><span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(bus.etat)}`}>{bus.etat}</span></td>
@@ -108,30 +143,22 @@ const BusListPage = () => {
                       <td className="px-6 py-4 text-right"><div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => navigate(`/admin/bus/${bus._id}/edit`)}><FiEdit/></Button><Button size="sm" variant="destructive" onClick={() => handleDelete(bus._id, bus.numero)}><FiTrash2/></Button></div></td>
                     </tr>
                   )) : (
-                    <tr><td colSpan="5" className="text-center py-10 text-gray-500">Aucun bus trouvé.</td></tr>
+                    <tr><td colSpan="5" className="text-center py-10 text-gray-500">Aucun bus ne correspond à vos filtres.</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
           )}
         </CardContent>
-        {/* --- NOUVELLE SECTION DE PAGINATION --- */}
-        {totalPages > 1 && (
-            <CardFooter className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">
-                    Page {currentPage} sur {totalPages}
-                </span>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>
-                        <FiChevronLeft className="h-4 w-4"/> Précédent
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>
-                        Suivant <FiChevronRight className="h-4 w-4"/>
-                    </Button>
-                </div>
-            </CardFooter>
+        {data.pages > 1 && (
+          <CardFooter className="flex justify-between items-center">
+            <span className="text-sm text-gray-500">Page {filters.page} sur {data.pages}</span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => handlePageChange(filters.page - 1)} disabled={filters.page === 1}><FiChevronLeft/> Précédent</Button>
+              <Button variant="outline" size="sm" onClick={() => handlePageChange(filters.page + 1)} disabled={filters.page >= data.pages}>Suivant <FiChevronRight/></Button>
+            </div>
+          </CardFooter>
         )}
-        {/* ------------------------------------- */}
       </Card>
     </div>
   );
