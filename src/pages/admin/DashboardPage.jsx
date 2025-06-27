@@ -1,12 +1,12 @@
 // src/pages/admin/DashboardPage.jsx
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom'; // <-- L'IMPORT MANQUANT EST ICI
+import { Link } from 'react-router-dom';
 import { FaBus } from 'react-icons/fa';
 import { FiUsers, FiBox, FiTrendingUp, FiLoader, FiArrowRight } from 'react-icons/fi';
 import api from '../../api';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card.jsx';
 
-// Carte de Statistique (KPI Card) avec un nouveau design
+// --- Le composant StatCard reste inchangé ---
 const StatCard = ({ title, value, icon, link, loading }) => (
     <Link to={link} className="block group">
         <Card className="hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
@@ -28,26 +28,22 @@ const StatCard = ({ title, value, icon, link, loading }) => (
     </Link>
 );
 
+
 const DashboardPage = () => {
+  // --- L'état initial est maintenant plus simple ---
   const [stats, setStats] = useState({ busCount: 0, chauffeurCount: 0, colisCount: 0, reservationCount: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // ====================================================================
+  // --- DÉBUT DE LA CORRECTION : LOGIQUE DE FETCH ENTIÈREMENT SIMPLIFIÉE ---
+  // ====================================================================
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [busRes, chauffeurRes, colisRes, reservationRes] = await Promise.all([
-          api.get('/admin/bus'),
-          api.get('/admin/chauffeurs'),
-          api.get('/admin/colis'),
-          api.get('/admin/reservations/all')
-        ]);
-        setStats({
-          busCount: Array.isArray(busRes.data) ? busRes.data.length : 0,
-          chauffeurCount: Array.isArray(chauffeurRes.data) ? chauffeurRes.data.length : 0,
-          colisCount: Array.isArray(colisRes.data) ? colisRes.data.length : 0,
-          reservationCount: Array.isArray(reservationRes.data) ? reservationRes.data.length : 0
-        });
+        // On fait un seul appel à notre nouvel endpoint optimisé
+        const { data } = await api.get('/admin/stats/overview');
+        setStats(data); // La réponse correspond directement à notre état
       } catch (err) {
         setError("Impossible de charger les données du tableau de bord.");
       } finally {
@@ -55,7 +51,10 @@ const DashboardPage = () => {
       }
     };
     fetchStats();
-  }, []);
+  }, []); // Le tableau de dépendances est vide, l'appel se fait une seule fois.
+  // ====================================================================
+  // --- FIN DE LA CORRECTION ---
+  // ====================================================================
 
   return (
     <div className="space-y-8">
@@ -66,7 +65,7 @@ const DashboardPage = () => {
       
       {error && <p className="text-red-500 bg-red-50 p-4 rounded-lg">{error}</p>}
 
-      {/* Cartes de KPIs */}
+      {/* Cartes de KPIs (le JSX ne change pas, il va juste recevoir les bonnes données) */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Bus au Total" 
