@@ -1,7 +1,7 @@
 // src/components/admin/Sidebar.jsx
 import React, { useContext } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { FiGrid, FiUsers, FiMap, FiPackage, FiCreditCard, FiLogOut, FiBarChart2 } from 'react-icons/fi';
+import { FiGrid, FiUsers, FiMap, FiPackage, FiLogOut, FiBarChart2 } from 'react-icons/fi';
 import { FaBus } from 'react-icons/fa';
 import AuthContext from '../../context/AuthContext';
 
@@ -40,10 +40,12 @@ const Sidebar = () => {
         navigate('/login');
     };
 
+  // --- CORRECTION : La structure flexbox est conservée, mais la gestion du débordement est améliorée.
   return (
     <aside className="w-64 bg-white h-screen shadow-2xl flex flex-col sticky top-0 border-r border-gray-100">
       
-      <div className="p-6 border-b border-gray-100 flex justify-center items-center">
+      {/* --- CORRECTION : On ajoute 'shrink-0' pour empêcher cette section de se réduire sur les petits écrans --- */}
+      <div className="p-6 border-b border-gray-100 flex justify-center items-center shrink-0">
         <Link to="/" className="group">
             <img 
               src="/assets/mybus.webp" 
@@ -53,17 +55,17 @@ const Sidebar = () => {
         </Link>
       </div>
       
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      {/* --- CORRECTION : On ajoute 'overflow-y-auto' pour que SEULEMENT la liste des liens devienne scrollable si nécessaire --- */}
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         {navLinks.map(link => (
           <SidebarLink key={link.to} {...link} />
         ))}
       </nav>
 
-      <div className="p-4 border-t border-gray-100">
-        {/* === CARTE DE PROFIL AMÉLIORÉE (OPTION 1) === */}
+      {/* --- CORRECTION : On ajoute 'shrink-0' pour que cette section soit toujours visible en bas --- */}
+      <div className="p-4 border-t border-gray-100 shrink-0">
         <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-pink-50">
             <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-blue-200 rounded-full text-blue-600 font-bold">
-                {/* Affiche la première lettre du prénom, ou 'A' si non disponible */}
                 {user?.prenom?.charAt(0).toUpperCase() || 'A'}
             </div>
             <div className="overflow-hidden">
@@ -75,7 +77,6 @@ const Sidebar = () => {
                 </p>
             </div>
         </div>
-        {/* ============================================== */}
 
         <button
           onClick={handleLogout}
