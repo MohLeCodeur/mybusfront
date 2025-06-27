@@ -10,7 +10,6 @@ import { FiPlus, FiEdit, FiLoader, FiPlayCircle, FiStopCircle, FiBell, FiChevron
 import { FaRoute } from 'react-icons/fa';
 
 // --- COMPOSANT ACTIONMENU (Logique de gestion des actions, inchangée) ---
-// Ce composant est déjà fonctionnel, nous le gardons tel quel.
 const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
   const [processing, setProcessing] = useState(false);
   const fetchTrajets = onActionEnd;
@@ -43,7 +42,7 @@ const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
   return null;
 };
 
-// --- COMPOSANT PRINCIPAL DE LA PAGE (ENTIÈREMENT REVU) ---
+// --- COMPOSANT PRINCIPAL DE LA PAGE (LOGIQUE DE PAGINATION CORRIGÉE) ---
 const TrajetListPage = () => {
     const navigate = useNavigate();
     const [data, setData] = useState({ docs: [], total: 0, pages: 1 });
@@ -51,7 +50,6 @@ const TrajetListPage = () => {
     const [error, setError] = useState('');
     const [isActionProcessing, setIsActionProcessing] = useState(false);
 
-    // État unifié pour tous les filtres
     const [filters, setFilters] = useState({
         status: 'avenir',
         sortBy: 'date_asc',
@@ -67,7 +65,7 @@ const TrajetListPage = () => {
             sortBy: filters.sortBy,
             search: debouncedSearch,
             page: filters.page,
-            limit: 8, // Nombre de trajets par page
+            limit: 8,
         });
 
         api.get(`/admin/trajets?${params.toString()}`)
@@ -78,9 +76,15 @@ const TrajetListPage = () => {
 
     useEffect(fetchTrajets, [fetchTrajets]);
     
-    // Fonction unique pour gérer tous les changements de filtres
+    // Fonction pour les filtres qui doivent réinitialiser la page
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
+    };
+
+    // --- CORRECTION : FONCTION DÉDIÉE POUR LA PAGINATION ---
+    // Cette fonction ne met à jour que la page, sans réinitialiser les autres filtres.
+    const handlePageChange = (newPage) => {
+        setFilters(prev => ({ ...prev, page: newPage }));
     };
 
     const resetFilters = () => {
@@ -142,7 +146,7 @@ const TrajetListPage = () => {
                                 <div>
                                     <div className="flex justify-between items-start">
                                         <div className="font-bold text-gray-800 flex items-center gap-2"><FaRoute/> {t.villeDepart} → {t.villeArrivee}</div>
-                                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${t.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{t.isActive ? 'Actif' : 'Annulé'}</span>
+                                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${t.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{t.isActive ? 'Actif' : 'Désactivé'}</span>
                                     </div>
                                     <p className="text-sm text-gray-500 mt-1">{t.compagnie}</p>
                                 </div>
@@ -165,10 +169,11 @@ const TrajetListPage = () => {
                     <CardFooter className="flex justify-between items-center">
                         <span className="text-sm text-gray-500">Page {filters.page} sur {data.pages}</span>
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleFilterChange('page', filters.page - 1)} disabled={filters.page === 1}>
+                            {/* --- CORRECTION : La pagination utilise maintenant handlePageChange --- */}
+                            <Button variant="outline" size="sm" onClick={() => handlePageChange(filters.page - 1)} disabled={filters.page === 1}>
                                 <FiChevronLeft className="h-4 w-4"/> Précédent
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleFilterChange('page', filters.page + 1)} disabled={filters.page >= data.pages}>
+                            <Button variant="outline" size="sm" onClick={() => handlePageChange(filters.page + 1)} disabled={filters.page >= data.pages}>
                                 Suivant <FiChevronRight className="h-4 w-4"/>
                             </Button>
                         </div>
