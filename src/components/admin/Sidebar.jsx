@@ -48,7 +48,7 @@ const Sidebar = () => {
             <img 
               src="/assets/mybus.webp" 
               alt="MyBus Logo" 
-              className="h-19 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+              className="h-24 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
             />
         </Link>
       </div>
