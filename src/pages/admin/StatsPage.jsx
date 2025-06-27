@@ -4,9 +4,9 @@ import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { ResponsiveContainer, BarChart, LineChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
-import { FiLoader, FiDollarSign, FiPackage, FiUsers, FiBarChart2, FiTrendingUp, FiCheckSquare, FiAlertCircle, FiArrowRight } from 'react-icons/fi';
+import { FiLoader, FiDollarSign, FiPackage, FiUsers, FiBarChart2, FiTrendingUp, FiCheckSquare, FiAlertCircle } from 'react-icons/fi';
 
-// --- COMPOSANT STAT CARD (AMÉLIORÉ) ---
+// --- COMPOSANT STAT CARD (INCHANGÉ) ---
 const StatCard = ({ title, value, icon, loading, colorClass, description }) => (
     <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -23,7 +23,7 @@ const StatCard = ({ title, value, icon, loading, colorClass, description }) => (
     </Card>
 );
 
-// --- COMPOSANT TABLEAU DE PERFORMANCE ---
+// --- COMPOSANT TABLEAU DE PERFORMANCE (INCHANGÉ) ---
 const PerformanceTable = ({ title, data, dataKey, valueKey, countKey, loading }) => (
     <Card className="h-full">
         <CardHeader>
@@ -48,7 +48,7 @@ const PerformanceTable = ({ title, data, dataKey, valueKey, countKey, loading })
     </Card>
 );
 
-// --- COMPOSANT PRINCIPAL DE LA PAGE ---
+// --- COMPOSANT PRINCIPAL DE LA PAGE (LOGIQUE INCHANGÉE) ---
 const StatsPage = () => {
     const [period, setPeriod] = useState('weekly');
     const [chartType, setChartType] = useState('bar');
@@ -109,15 +109,49 @@ const StatsPage = () => {
             
             {error && <div className="p-4 bg-red-100 text-red-700 rounded-lg flex items-center gap-2"><FiAlertCircle/> {error}</div>}
 
-            {/* --- SECTION DES KPIS --- */}
+            {/* ======================================================== */}
+            {/* === DÉBUT DE LA SECTION CORRIGÉE : LES KPIS MIS À JOUR === */}
+            {/* ======================================================== */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Revenu Total" value={formatCurrency(summary.totalRevenue)} icon={<FiDollarSign />} loading={loadingSummary} colorClass="text-green-500" description={`Période: ${periodButtons.find(b=>b.value===period).label}`}/>
-                <StatCard title="Réservations" value={summary.totalReservations?.toLocaleString() || '0'} icon={<FiCheckSquare />} loading={loadingSummary} colorClass="text-blue-500" description={`${formatCurrency(summary.totalRevenueBillets)} de revenus`}/>
-                <StatCard title="Colis Expédiés" value={summary.totalColis?.toLocaleString() || '0'} icon={<FiPackage />} loading={loadingSummary} colorClass="text-pink-500" description={`${formatCurrency(summary.totalRevenueColis)} de revenus`}/>
-                <StatCard title="Nouveaux Clients" value={summary.newUsersCount?.toLocaleString() || '0'} icon={<FiUsers />} loading={loadingSummary} colorClass="text-orange-500" description="Clients enregistrés sur la période"/>
+                <StatCard 
+                    title="Revenu Total" 
+                    value={formatCurrency(summary.totalRevenue)} 
+                    icon={<FiDollarSign />} 
+                    loading={loadingSummary} 
+                    colorClass="text-green-500" 
+                    description={`Période: ${periodButtons.find(b=>b.value===period).label}`}
+                />
+                <StatCard 
+                    title="Revenus des Billets" 
+                    value={formatCurrency(summary.totalRevenueBillets)} 
+                    icon={<FiCheckSquare />} 
+                    loading={loadingSummary} 
+                    colorClass="text-blue-500" 
+                    description={`${summary.totalReservations?.toLocaleString() || '0'} réservations`}
+                />
+                <StatCard 
+                    title="Revenus des Colis" 
+                    value={formatCurrency(summary.totalRevenueColis)} 
+                    icon={<FiPackage />} 
+                    loading={loadingSummary} 
+                    colorClass="text-pink-500" 
+                    description={`${summary.totalColis?.toLocaleString() || '0'} colis expédiés`}
+                />
+                <StatCard 
+                    title="Nouveaux Clients" 
+                    value={summary.newUsersCount?.toLocaleString() || '0'} 
+                    icon={<FiUsers />} 
+                    loading={loadingSummary} 
+                    colorClass="text-orange-500" 
+                    description="Clients enregistrés sur la période"
+                />
             </div>
+            {/* ======================================================== */}
+            {/* === FIN DE LA SECTION CORRIGÉE ========================= */}
+            {/* ======================================================== */}
 
-            {/* --- SECTION GRAPHIQUE DE REVENUS --- */}
+
+            {/* --- SECTION GRAPHIQUE DE REVENUS (INCHANGÉE) --- */}
             <Card className="shadow-xl border-t-4 border-gray-200">
                 <CardHeader>
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -157,7 +191,7 @@ const StatsPage = () => {
                 </CardContent>
             </Card>
 
-             {/* --- SECTION DES INSIGHTS DE PERFORMANCE --- */}
+             {/* --- SECTION DES INSIGHTS DE PERFORMANCE (INCHANGÉE) --- */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <PerformanceTable
                     title="Trajets les plus rentables"
