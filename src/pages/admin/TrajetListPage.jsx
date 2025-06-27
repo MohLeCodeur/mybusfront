@@ -141,29 +141,61 @@ const TrajetListPage = () => {
                     {loading ? <div className="text-center p-8"><FiLoader className="animate-spin mx-auto text-3xl text-blue-500"/></div> :
                     error ? <p className="text-red-500 bg-red-50 p-4 rounded-lg">{error}</p> :
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {data.docs.length > 0 ? data.docs.map(t => (
-                            <div key={t._id} className="bg-white p-4 rounded-lg border hover:shadow-md transition-shadow flex flex-col justify-between">
-                                <div>
-                                    <div className="flex justify-between items-start">
-                                        <div className="font-bold text-gray-800 flex items-center gap-2"><FaRoute/> {t.villeDepart} → {t.villeArrivee}</div>
-                                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${t.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{t.isActive ? 'Actif' : 'Désactivé'}</span>
-                                    </div>
-                                    <p className="text-sm text-gray-500 mt-1">{t.compagnie}</p>
-                                </div>
-                                <div className="flex justify-between text-sm text-gray-600 border-y my-3 py-2">
-                                    <span className="flex items-center gap-1"><FiCalendar size={14}/> {new Date(t.dateDepart).toLocaleDateString('fr-FR')} - {t.heureDepart}</span>
-                                    <span className="flex items-center gap-1 font-semibold"><FiTag size={14}/> {t.prix.toLocaleString()} FCFA</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <p className="text-xs text-gray-500">Bus: <span className="font-semibold">{t.bus?.numero || 'Non assigné'}</span></p>
-                                    <div className="flex gap-2 items-center">
-                                        <ActionMenu trajet={t} onActionStart={() => setIsActionProcessing(true)} onActionEnd={fetchTrajets} />
-                                        <Button size="sm" variant="outline" onClick={() => navigate(`/admin/trajets/${t._id}/edit`)} title="Modifier" disabled={isActionProcessing}><FiEdit/></Button>
-                                    </div>
-                                </div>
-                            </div>
-                        )) : <p className="col-span-full text-center py-10 text-gray-500">Aucun trajet ne correspond à vos filtres.</p>}
-                    </div>}
+    {data.docs.length > 0 ? data.docs.map(t => {
+        // --- DÉBUT DE LA CORRECTION ---
+        // Définissons des variables claires pour le statut d'affichage
+        const isFinished = t.liveTrip?.status === 'Terminé';
+        // Un trajet est considéré comme annulé s'il est désactivé OU si son LiveTrip est annulé
+        const isCancelled = !t.isActive || t.liveTrip?.status === 'Annulé';
+
+        let statusBadge;
+        if (isCancelled) {
+            statusBadge = (
+                <span className="text-xs font-bold px-2 py-1 rounded-full bg-red-100 text-red-800">
+                    Annulé
+                </span>
+            );
+        } else if (isFinished) {
+            statusBadge = (
+                <span className="text-xs font-bold px-2 py-1 rounded-full bg-gray-200 text-gray-800">
+                    Terminé
+                </span>
+            );
+        } else {
+            statusBadge = (
+                <span className="text-xs font-bold px-2 py-1 rounded-full bg-green-100 text-green-800">
+                    Actif
+                </span>
+            );
+        }
+        // --- FIN DE LA CORRECTION ---
+
+        return (
+            <div key={t._id} className="bg-white p-4 rounded-lg border hover:shadow-md transition-shadow flex flex-col justify-between">
+                <div>
+                    <div className="flex justify-between items-start">
+                        <div className="font-bold text-gray-800 flex items-center gap-2"><FaRoute/> {t.villeDepart} → {t.villeArrivee}</div>
+                        {/* On utilise notre badge intelligent ici */}
+                        {statusBadge}
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">{t.compagnie}</p>
+                </div>
+                {/* ... le reste de votre carte reste inchangé ... */}
+                <div className="flex justify-between text-sm text-gray-600 border-y my-3 py-2">
+                    <span className="flex items-center gap-1"><FiCalendar size={14}/> {new Date(t.dateDepart).toLocaleDateString('fr-FR')} - {t.heureDepart}</span>
+                    <span className="flex items-center gap-1 font-semibold"><FiTag size={14}/> {t.prix.toLocaleString()} FCFA</span>
+                </div>
+                <div className="flex justify-between items-center">
+                    <p className="text-xs text-gray-500">Bus: <span className="font-semibold">{t.bus?.numero || 'Non assigné'}</span></p>
+                    <div className="flex gap-2 items-center">
+                        <ActionMenu trajet={t} onActionStart={() => setIsActionProcessing(true)} onActionEnd={fetchTrajets} />
+                        <Button size="sm" variant="outline" onClick={() => navigate(`/admin/trajets/${t._id}/edit`)} title="Modifier" disabled={isActionProcessing}><FiEdit/></Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }) : <p className="col-span-full text-center py-10 text-gray-500">Aucun trajet ne correspond à vos filtres.</p>}
+</div>}
                 </CardContent>
                 {data.pages > 1 && (
                     <CardFooter className="flex justify-between items-center">
