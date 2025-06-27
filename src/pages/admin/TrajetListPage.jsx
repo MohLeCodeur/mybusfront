@@ -10,8 +10,8 @@ import { FiPlus, FiEdit, FiLoader, FiPlayCircle, FiStopCircle, FiBell, FiChevron
 import { FaRoute } from 'react-icons/fa';
 
 // --- COMPOSANT ACTIONMENU (Logique de gestion des actions, inchangée) ---
+// Ce composant est déjà fonctionnel, nous le gardons tel quel.
 const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
-    // ... (Le code de ce composant reste identique à votre version, car il fonctionne bien)
   const [processing, setProcessing] = useState(false);
   const fetchTrajets = onActionEnd;
   const handleApiCall = async (apiFunc, successMsg) => {
@@ -51,7 +51,7 @@ const TrajetListPage = () => {
     const [error, setError] = useState('');
     const [isActionProcessing, setIsActionProcessing] = useState(false);
 
-    // Nouveaux états pour les filtres
+    // État unifié pour tous les filtres
     const [filters, setFilters] = useState({
         status: 'avenir',
         sortBy: 'date_asc',
@@ -67,7 +67,7 @@ const TrajetListPage = () => {
             sortBy: filters.sortBy,
             search: debouncedSearch,
             page: filters.page,
-            limit: 8,
+            limit: 8, // Nombre de trajets par page
         });
 
         api.get(`/admin/trajets?${params.toString()}`)
@@ -78,6 +78,7 @@ const TrajetListPage = () => {
 
     useEffect(fetchTrajets, [fetchTrajets]);
     
+    // Fonction unique pour gérer tous les changements de filtres
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
     };
@@ -102,7 +103,7 @@ const TrajetListPage = () => {
                 <CardHeader>
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
-                            <CardTitle>Liste des Trajets ({data.total})</CardTitle>
+                            <CardTitle>Liste des Trajets ({loading ? '...' : data.total})</CardTitle>
                             <CardDescription>Filtrez et triez pour trouver un trajet spécifique.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2 relative">
@@ -112,24 +113,24 @@ const TrajetListPage = () => {
                                 placeholder="Rechercher (ville, compagnie...)"
                                 value={filters.search}
                                 onChange={(e) => handleFilterChange('search', e.target.value)}
-                                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full md:w-64"
+                                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full md:w-64 focus:ring-2 focus:ring-blue-500 outline-none"
                             />
                         </div>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-gray-100">
-                        <select value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)} className="border-gray-300 rounded-md text-sm p-2 bg-white">
-                            <option value="avenir">À venir</option>
-                            <option value="encours">En cours</option>
-                            <option value="passes">Passés / Annulés</option>
-                            <option value="tous">Tous les trajets</option>
+                        <select value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)} className="border-gray-300 rounded-md text-sm p-2 bg-white flex-grow">
+                            <option value="avenir">Statut : À venir</option>
+                            <option value="encours">Statut : En cours</option>
+                            <option value="passes">Statut : Passés / Annulés</option>
+                            <option value="tous">Statut : Tous les trajets</option>
                         </select>
-                        <select value={filters.sortBy} onChange={(e) => handleFilterChange('sortBy', e.target.value)} className="border-gray-300 rounded-md text-sm p-2 bg-white">
-                            <option value="date_asc">Trier par Date (Proche → Loin)</option>
-                            <option value="date_desc">Trier par Date (Loin → Proche)</option>
-                            <option value="price_asc">Trier par Prix (Bas → Haut)</option>
-                            <option value="price_desc">Trier par Prix (Haut → Bas)</option>
+                        <select value={filters.sortBy} onChange={(e) => handleFilterChange('sortBy', e.target.value)} className="border-gray-300 rounded-md text-sm p-2 bg-white flex-grow">
+                            <option value="date_asc">Trier par : Date (croissante)</option>
+                            <option value="date_desc">Trier par : Date (décroissante)</option>
+                            <option value="price_asc">Trier par : Prix (croissant)</option>
+                            <option value="price_desc">Trier par : Prix (décroissant)</option>
                         </select>
-                        <Button variant="outline" size="sm" onClick={resetFilters}><FiRefreshCw className="mr-1"/> Réinitialiser</Button>
+                        <Button variant="outline" size="sm" onClick={resetFilters} className="flex-shrink-0"><FiRefreshCw className="mr-1"/> Réinitialiser</Button>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -167,7 +168,7 @@ const TrajetListPage = () => {
                             <Button variant="outline" size="sm" onClick={() => handleFilterChange('page', filters.page - 1)} disabled={filters.page === 1}>
                                 <FiChevronLeft className="h-4 w-4"/> Précédent
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleFilterChange('page', filters.page + 1)} disabled={filters.page === data.pages}>
+                            <Button variant="outline" size="sm" onClick={() => handleFilterChange('page', filters.page + 1)} disabled={filters.page >= data.pages}>
                                 Suivant <FiChevronRight className="h-4 w-4"/>
                             </Button>
                         </div>
