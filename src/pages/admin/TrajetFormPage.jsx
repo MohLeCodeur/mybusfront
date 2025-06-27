@@ -39,14 +39,27 @@ const TrajetFormPage = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const busRes = await api.get('/admin/bus');
+                // ====================================================================
+                // --- DÉBUT DE LA CORRECTION : Utiliser le nouvel endpoint ---
+                // ====================================================================
+                const busRes = await api.get('/admin/bus/available');
+                // ====================================================================
+                // --- FIN DE LA CORRECTION ---
+                // ====================================================================
+                
                 setBuses(Array.isArray(busRes.data) ? busRes.data : []);
+                
                 if (isEditMode) {
                     const trajetRes = await api.get(`/public/trajets/${id}`);
                     const { coordsDepart = {lat:'', lng:''}, coordsArrivee = {lat:'', lng:''}, ...rest } = trajetRes.data;
                     setFormData({ ...rest, dateDepart: new Date(trajetRes.data.dateDepart).toISOString().split('T')[0], bus: trajetRes.data.bus?._id || '', coordsDepart, coordsArrivee, isActive: typeof trajetRes.data.isActive === 'boolean' ? trajetRes.data.isActive : true });
                 }
-            } catch (err) { setError("Erreur de chargement."); } finally { setFormLoading(false); }
+            } catch (err) { 
+                setError("Erreur de chargement des données."); 
+                console.error("Erreur de chargement:", err);
+            } finally { 
+                setFormLoading(false); 
+            }
         };
         loadData();
     }, [id, isEditMode]);
@@ -75,10 +88,16 @@ const TrajetFormPage = () => {
             const payload = { ...formData, bus: formData.bus || null };
             payload.prix = parseFloat(payload.prix);
             payload.placesDisponibles = parseInt(payload.placesDisponibles);
-            payload.coordsDepart.lat = parseFloat(payload.coordsDepart.lat);
-            payload.coordsDepart.lng = parseFloat(payload.coordsDepart.lng);
-            payload.coordsArrivee.lat = parseFloat(payload.coordsArrivee.lat);
-            payload.coordsArrivee.lng = parseFloat(payload.coordsArrivee.lng);
+            
+            // S'assurer que les coordonnées sont bien des nombres
+            if(payload.coordsDepart) {
+                payload.coordsDepart.lat = parseFloat(payload.coordsDepart.lat);
+                payload.coordsDepart.lng = parseFloat(payload.coordsDepart.lng);
+            }
+            if(payload.coordsArrivee) {
+                payload.coordsArrivee.lat = parseFloat(payload.coordsArrivee.lat);
+                payload.coordsArrivee.lng = parseFloat(payload.coordsArrivee.lng);
+            }
 
             const apiCall = isEditMode ? api.put(`/admin/trajets/${id}`, payload) : api.post('/admin/trajets', payload);
             await apiCall;
