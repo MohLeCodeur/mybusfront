@@ -114,7 +114,7 @@ const TrajetListPage = () => {
                             <FiSearch className="absolute left-3 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Rechercher (ville, compagnie...)"
+                                placeholder="Rechercher (ville, ...)"
                                 value={filters.search}
                                 onChange={(e) => handleFilterChange('search', e.target.value)}
                                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full md:w-64 focus:ring-2 focus:ring-blue-500 outline-none"
