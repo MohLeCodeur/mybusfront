@@ -133,7 +133,6 @@ const ConfirmationPage = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-sm">
-                <div><strong className="block text-gray-500">Compagnie</strong><span className="font-medium">{reservation.trajet.compagnie}</span></div>
                 <div><strong className="block text-gray-500">Bus N°</strong><span className="font-medium">{reservation.trajet.bus?.numero || 'N/A'}</span></div>
                 <div><strong className="block text-gray-500">Places</strong><span className="font-medium">{reservation.placesReservees}</span></div>
             </div>

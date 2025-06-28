@@ -178,7 +178,7 @@ const TrajetListPage = () => {
                         {/* On utilise notre badge intelligent ici */}
                         {statusBadge}
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">{t.compagnie}</p>
+                    
                 </div>
                 {/* ... le reste de votre carte reste inchangé ... */}
                 <div className="flex justify-between text-sm text-gray-600 border-y my-3 py-2">

@@ -109,7 +109,6 @@ const ReservationPage = () => {
         <div className="bg-white rounded-3xl shadow-xl p-8 ring-1 ring-gray-100 self-start">
           <h2 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-blue-600">Détails du trajet</h2>
           <ul className="space-y-3 mb-6 text-lg">
-            <li><strong>Compagnie:</strong> {trajet.compagnie}</li>
             <li><strong>Itinéraire:</strong> {trajet.villeDepart} → {trajet.villeArrivee}</li>
             <li><strong>Date:</strong> {new Date(trajet.dateDepart).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</li>
             <li><strong>Heure:</strong> {trajet.heureDepart}</li>

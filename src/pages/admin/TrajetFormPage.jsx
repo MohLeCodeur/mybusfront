@@ -28,7 +28,7 @@ const TrajetFormPage = () => {
     const [formData, setFormData] = useState({
         villeDepart: '', villeArrivee: '',
         coordsDepart: { lat: '', lng: '' }, coordsArrivee: { lat: '', lng: '' },
-        compagnie: '', dateDepart: '', heureDepart: '',
+         dateDepart: '', heureDepart: '',
         prix: '', placesDisponibles: '', bus: '', isActive: true
     });
     const [buses, setBuses] = useState([]);

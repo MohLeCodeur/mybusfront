@@ -3,24 +3,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiLoader, FiSearch, FiFilter, FiX, FiChevronDown } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { useDebounce } from 'use-debounce';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api';
 import TrajetCard from '../../components/public/TrajetCard.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 
 const LIMIT = 9;
-
 const SearchPage = () => {
-  const [filters, setFilters] = useState({ departure: '', arrival: '', date: '', company: '', sortBy: 'date' });
-  const [debouncedCompany] = useDebounce(filters.company, 500);
+  // --- "company" est retiré de l'état des filtres ---
+  const [filters, setFilters] = useState({ departure: '', arrival: '', date: '', sortBy: 'date' });
   
-  // État pour contrôler la visibilité de l'accordéon sur mobile
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ docs: [], totalPages: 1, total: 0 });
-  const [meta, setMeta] = useState({ allCities: [], allCompanies: [] });
+  const [meta, setMeta] = useState({ allCities: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -32,7 +28,7 @@ const SearchPage = () => {
       villeDepart: filters.departure,
       villeArrivee: filters.arrival,
       date: filters.date,
-      compagnie: debouncedCompany,
+      // --- Le paramètre "compagnie" n'est plus envoyé ---
       sortBy: filters.sortBy,
       page,
       limit: LIMIT,
@@ -44,12 +40,12 @@ const SearchPage = () => {
       })
       .catch(err => setError(err.response?.data?.message || "Une erreur est survenue."))
       .finally(() => setLoading(false));
-  }, [filters.departure, filters.arrival, filters.date, debouncedCompany, filters.sortBy, page]);
-
+  }, [filters.departure, filters.arrival, filters.date, filters.sortBy, page]);
+  
   useEffect(() => {
     fetchTrajets();
   }, [fetchTrajets]);
-
+  
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
@@ -57,19 +53,17 @@ const SearchPage = () => {
   };
 
   const handleReset = () => {
-    setFilters({ departure: '', arrival: '', date: '', company: '', sortBy: 'date' });
+    // --- "company" est retiré du reset ---
+    setFilters({ departure: '', arrival: '', date: '', sortBy: 'date' });
     setPage(1);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-white">
-      {/* ======================================================= */}
-      {/* === Section des filtres - VERSION FINALE ET ROBUSTE === */}
-      {/* ======================================================= */}
       <section className="sticky top-20 z-20 bg-white/90 backdrop-blur-lg shadow-md p-4">
         <div className="max-w-7xl mx-auto">
-            {/* Version Ordinateur (lg et plus grand) - filtres toujours visibles */}
-            <div className="hidden lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            {/* --- La grille passe à 4 colonnes et le champ compagnie est supprimé --- */}
+            <div className="hidden lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <select name="departure" value={filters.departure} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 bg-white">
                     <option value="">De (toutes villes)</option>
                     {meta.allCities.map(v => <option key={v} value={v}>{v}</option>)}
@@ -79,23 +73,16 @@ const SearchPage = () => {
                     {meta.allCities.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
                 <input type="date" name="date" value={filters.date} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500" />
-                <input type="text" name="company" value={filters.company} onChange={handleFilterChange} placeholder="Compagnie..." className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500"/>
                 <Button onClick={handleReset} variant="outline" className="w-full py-3 flex items-center justify-center gap-2"><FiX/> Effacer</Button>
             </div>
 
-            {/* Version Mobile (plus petit que lg) - Accordéon */}
             <div className="lg:hidden">
                 <button 
                     onClick={() => setIsMobileFiltersOpen(prev => !prev)}
                     className="w-full flex items-center justify-between px-4 py-3 text-left bg-white border border-gray-200 rounded-lg shadow-sm"
                 >
-                    <span className="flex items-center gap-2 font-semibold text-gray-700">
-                        <FiFilter />
-                        Filtrer les résultats
-                    </span>
-                    <FiChevronDown 
-                        className={`transform transition-transform duration-300 ${isMobileFiltersOpen ? 'rotate-180' : ''}`} 
-                    />
+                    <span className="flex items-center gap-2 font-semibold text-gray-700"><FiFilter />Filtrer les résultats</span>
+                    <FiChevronDown className={`transform transition-transform duration-300 ${isMobileFiltersOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 <AnimatePresence>
@@ -113,12 +100,12 @@ const SearchPage = () => {
                                     <option value="">De (toutes villes)</option>
                                     {meta.allCities.map(v => <option key={v} value={v}>{v}</option>)}
                                 </select>
-                                <select name="arrival" value={filters.arrival} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 bg-white">
+                                <select name="arrival" value={filters.arrival} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-Ggray-300 focus:ring-2 focus:ring-pink-500 bg-white">
                                     <option value="">À (toutes villes)</option>
                                     {meta.allCities.map(v => <option key={v} value={v}>{v}</option>)}
                                 </select>
                                 <input type="date" name="date" value={filters.date} onChange={handleFilterChange} className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500" />
-                                <input type="text" name="company" value={filters.company} onChange={handleFilterChange} placeholder="Compagnie..." className="w-full px-4 py-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500"/>
+                                {/* --- Le champ de recherche compagnie est supprimé --- */}
                                 <Button onClick={handleReset} variant="outline" className="w-full py-3 flex items-center justify-center gap-2"><FiX/> Effacer</Button>
                             </div>
                         </motion.div>

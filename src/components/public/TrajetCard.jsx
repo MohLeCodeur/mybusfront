@@ -1,4 +1,4 @@
-/* src/components/TrajetCard.jsx */
+/* src/components/public/TrajetCard.jsx */
 import { FiMapPin, FiClock, FiCalendar, FiPackage, FiTruck } from 'react-icons/fi'
 
 export default function TrajetCard ({ trajet, onReserve }) {
@@ -9,16 +9,14 @@ export default function TrajetCard ({ trajet, onReserve }) {
   return (
     <div className="group bg-white rounded-3xl shadow-xl p-8ring-1 ring-gray-100 hover:ring-pink-400/50 hover:shadow-pink-300/30 transition">
       <div className="p-6 space-y-4">
-        {/* Ville + compagnie + prix */}
+        {/* Ville + prix */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
           <div>
             <h3 className="text-lg font-semibold flex items-center gap-1 text-gray-800">
               <FiMapPin className="text-pink-500" />
               {trajet.villeDepart} → {trajet.villeArrivee}
             </h3>
-            <p className="flex items-center gap-1 text-sm text-gray-500">
-              <FiTruck /> {trajet.compagnie}
-            </p>
+            {/* --- L'affichage de la compagnie est supprimé --- */}
           </div>
 
           <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-blue-600 bg-clip-text text-transparent">
