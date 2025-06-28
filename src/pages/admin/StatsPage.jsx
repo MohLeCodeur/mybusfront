@@ -201,14 +201,7 @@ const StatsPage = () => {
                     countKey="reservationCount"
                     loading={loadingPerformance}
                 />
-                <PerformanceTable
-                    title="Compagnies les plus performantes"
-                    data={performance.topCompanies}
-                    dataKey="company"
-                    valueKey="totalRevenue"
-                    countKey="reservationCount"
-                    loading={loadingPerformance}
-                />
+               
             </div>
 
         </div>
