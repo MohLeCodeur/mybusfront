@@ -23,11 +23,11 @@ const StatCard = ({ title, value, icon, loading, colorClass, description }) => (
     </Card>
 );
 
-// --- COMPOSANT TABLEAU DE PERFORMANCE (INCHANGÉ) ---
-const PerformanceTable = ({ title, data, dataKey, valueKey, countKey, loading }) => (
+// --- COMPOSANT TABLEAU DE PERFORMANCE (INCHANGÉ, il est réutilisable) ---
+const PerformanceTable = ({ title, data, dataKey, valueKey, countKey, loading, icon, unitLabel = 'transactions' }) => (
     <Card className="h-full">
         <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2"><FiTrendingUp/> {title}</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">{icon} {title}</CardTitle>
         </CardHeader>
         <CardContent>
             {loading ? <div className="flex justify-center items-center h-48"><FiLoader className="animate-spin text-2xl"/></div> :
@@ -38,24 +38,26 @@ const PerformanceTable = ({ title, data, dataKey, valueKey, countKey, loading })
                             <div className="font-semibold text-gray-700">{item[dataKey]}</div>
                             <div className="text-right">
                                 <div className="font-bold text-blue-600">{item[valueKey].toLocaleString('fr-FR')} FCFA</div>
-                                <div className="text-xs text-gray-500">{item[countKey]} transactions</div>
+                                <div className="text-xs text-gray-500">{item[countKey]} {unitLabel}</div>
                             </div>
                         </li>
                     ))}
                 </ul>
-            ) : <p className="text-center text-gray-500 py-10">Aucune donnée pour cette période.</p>}
+             ) : <p className="text-center text-gray-500 py-10">Aucune donnée pour cette période.</p>}
         </CardContent>
     </Card>
 );
 
-// --- COMPOSANT PRINCIPAL DE LA PAGE (LOGIQUE INCHANGÉE) ---
+// --- COMPOSANT PRINCIPAL DE LA PAGE (MODIFIÉ) ---
 const StatsPage = () => {
     const [period, setPeriod] = useState('weekly');
     const [chartType, setChartType] = useState('bar');
     
     const [summary, setSummary] = useState({});
     const [chartData, setChartData] = useState([]);
-    const [performance, setPerformance] = useState({ topRoutes: [], topCompanies: [] });
+    
+    // <--- MODIFICATION : Initialiser l'état pour les données des colis --->
+    const [performance, setPerformance] = useState({ topRoutes: [], topParcelDestinations: [] });
     
     const [loadingSummary, setLoadingSummary] = useState(true);
     const [loadingPerformance, setLoadingPerformance] = useState(true);
@@ -73,7 +75,7 @@ const StatsPage = () => {
             .then(([summaryRes, performanceRes]) => {
                 setSummary(summaryRes.data.summary);
                 setChartData(summaryRes.data.chartData);
-                setPerformance(performanceRes.data);
+                setPerformance(performanceRes.data); // Le backend renvoie maintenant l'objet complet
             })
             .catch(err => setError(err.response?.data?.message || 'Erreur de chargement des données.'))
             .finally(() => {
@@ -81,7 +83,6 @@ const StatsPage = () => {
                 setLoadingPerformance(false);
             });
     }, [period]);
-
     useEffect(fetchData, [fetchData]);
 
     const formatCurrency = (value) => `${(value || 0).toLocaleString('fr-FR')} FCFA`;
@@ -91,10 +92,8 @@ const StatsPage = () => {
         { label: '30 Jours', value: 'monthly' },
         { label: 'Cette Année', value: 'yearly' },
     ];
-    
     const ChartComponent = chartType === 'bar' ? BarChart : LineChart;
     const ChartElement = chartType === 'bar' ? Bar : Line;
-
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
@@ -109,9 +108,7 @@ const StatsPage = () => {
             
             {error && <div className="p-4 bg-red-100 text-red-700 rounded-lg flex items-center gap-2"><FiAlertCircle/> {error}</div>}
 
-            {/* ======================================================== */}
-            {/* === DÉBUT DE LA SECTION CORRIGÉE : LES KPIS MIS À JOUR === */}
-            {/* ======================================================== */}
+            {/* --- Section des KPIs (inchangée) --- */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <StatCard 
                     title="Revenu Total" 
@@ -146,12 +143,8 @@ const StatsPage = () => {
                     description="Clients enregistrés sur la période"
                 />
             </div>
-            {/* ======================================================== */}
-            {/* === FIN DE LA SECTION CORRIGÉE ========================= */}
-            {/* ======================================================== */}
-
-
-            {/* --- SECTION GRAPHIQUE DE REVENUS (INCHANGÉE) --- */}
+            
+            {/* --- Section du graphique (inchangée) --- */}
             <Card className="shadow-xl border-t-4 border-gray-200">
                 <CardHeader>
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -191,19 +184,30 @@ const StatsPage = () => {
                 </CardContent>
             </Card>
 
-             {/* --- SECTION DES INSIGHTS DE PERFORMANCE (INCHANGÉE) --- */}
+            {/* <--- DÉBUT DE LA SECTION MODIFIÉE : Insights de performance ---> */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <PerformanceTable
+                    icon={<FiTrendingUp/>}
                     title="Trajets les plus rentables"
                     data={performance.topRoutes}
                     dataKey="route"
                     valueKey="totalRevenue"
                     countKey="reservationCount"
+                    unitLabel="réservations"
                     loading={loadingPerformance}
                 />
-               
+                <PerformanceTable
+                    icon={<FiPackage/>}
+                    title="Colis les plus rentables"
+                    data={performance.topParcelDestinations}
+                    dataKey="destination"
+                    valueKey="totalRevenue"
+                    countKey="colisCount"
+                    unitLabel="colis"
+                    loading={loadingPerformance}
+                />
             </div>
-
+            {/* <--- FIN DE LA SECTION MODIFIÉE ---> */}
         </div>
     );
 };
