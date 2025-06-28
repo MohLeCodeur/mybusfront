@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../../api';
 import { FiCheck, FiDownload, FiCalendar, FiClock, FiUsers, FiLoader, FiMapPin } from 'react-icons/fi';
 import { FaTicketAlt, FaBus } from 'react-icons/fa';
-import { toPng } from 'html-to-image'; // On garde html-to-image, il est plus moderne
+import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 
 const ConfirmationPage = () => {
@@ -22,7 +22,6 @@ const ConfirmationPage = () => {
       .finally(() => setLoading(false));
   }, [reservationId]);
 
-  // --- LOGIQUE DE TÉLÉCHARGEMENT PDF ROBUSTE (INSPIRÉE DE VOTRE ANCIEN CODE) ---
   const handleDownloadTicket = async () => {
     if (!ticketRef.current || downloading) return;
     setDownloading(true);
@@ -30,25 +29,21 @@ const ConfirmationPage = () => {
     const ticketNode = ticketRef.current;
     let dataUrl;
 
-    // 1. Créer un conteneur temporaire hors de l'écran
     const tempContainer = document.createElement('div');
     tempContainer.style.position = 'absolute';
     tempContainer.style.left = '-10000px';
     tempContainer.style.top = '0';
-    tempContainer.style.width = '800px'; // Largeur fixe pour garantir un rendu consistant
+    tempContainer.style.width = '800px';
     document.body.appendChild(tempContainer);
 
-    // 2. Cloner le ticket dans ce conteneur
     const ticketClone = ticketNode.cloneNode(true);
     ticketClone.style.width = '100%';
     ticketClone.style.margin = '0';
     tempContainer.appendChild(ticketClone);
 
-    // Donner un instant au navigateur pour rendre le clone
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-        // 3. Capturer le clone
         dataUrl = await toPng(ticketClone, {
             quality: 1.0,
             pixelRatio: 2.5,
@@ -62,10 +57,8 @@ const ConfirmationPage = () => {
         return;
     }
 
-    // 4. Nettoyer le DOM
     document.body.removeChild(tempContainer);
 
-    // 5. Créer et centrer l'image dans le PDF
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -74,7 +67,7 @@ const ConfirmationPage = () => {
     
     await new Promise(resolve => { img.onload = resolve; });
 
-    const imgWidth = pdfWidth - 20; // 10mm de marge
+    const imgWidth = pdfWidth - 20;
     const imgHeight = (img.height * imgWidth) / img.width;
     const x = 10;
     const y = (pdfHeight - imgHeight) / 2;
@@ -97,13 +90,13 @@ const ConfirmationPage = () => {
           <div className="bg-green-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6"><FiCheck className="text-4xl text-green-500" /></div>
           <h1 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-blue-600">Réservation confirmée !</h1>
           <p className="text-gray-600">Votre paiement a été effectué avec succès. Voici votre e-ticket.</p>
-          <div className="mt-6 bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-r-lg max-w-lg mx-auto text-left"><div className="flex items-center gap-3"><FiMapPin className="text-2xl shrink-0"/><dvi>
+          <div className="mt-6 bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-r-lg max-w-lg mx-auto text-left"><div className="flex items-center gap-3"><FiMapPin className="text-2xl shrink-0"/><div>
               <h4 className="font-bold">Suivi en temps réel disponible</h4>
               <p className="text-sm">Vous pourrez suivre votre bus depuis votre <Link to="/dashboard" className="font-semibold underline hover:text-blue-600">espace "Mon Compte"</Link> une fois le voyage commencé.</p>
-          </dvi></div></div>
+          </div></div></div>
         </div>
 
-        {/* --- TICKET COMPLET (Inspiré de votre ancien code) --- */}
+        {/* --- TICKET COMPLET --- */}
         <div ref={ticketRef} className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 relative mx-auto max-w-2xl">
           <div className="bg-gradient-to-r from-pink-500 to-blue-600 py-6 px-8 text-white flex justify-between items-center">
               <div><h2 className="text-2xl font-bold">MyBus</h2><p className="text-sm opacity-90">E-Ticket de Voyage</p></div>
@@ -132,9 +125,16 @@ const ConfirmationPage = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-sm">
-                <div><strong className="block text-gray-500">Bus N°</strong><span className="font-medium">{reservation.trajet.bus?.numero || 'N/A'}</span></div>
-                <div><strong className="block text-gray-500">Places</strong><span className="font-medium">{reservation.placesReservees}</span></div>
+            {/* --- SECTION CORRIGÉE ET CENTRÉE --- */}
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-x-8 gap-y-4 mb-8 text-sm text-center">
+                <div>
+                    <strong className="block text-gray-500">Bus N°</strong>
+                    <span className="font-medium">{reservation.trajet.bus?.numero || 'N/A'}</span>
+                </div>
+                <div>
+                    <strong className="block text-gray-500">Places</strong>
+                    <span className="font-medium">{reservation.placesReservees}</span>
+                </div>
             </div>
             
             <div className="flex justify-between items-center border-t border-dashed pt-6">
@@ -161,4 +161,5 @@ const ConfirmationPage = () => {
     </main>
   );
 };
+
 export default ConfirmationPage;
