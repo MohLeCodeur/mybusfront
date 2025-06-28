@@ -418,9 +418,7 @@ const ColisFormPage = () => {
                                             required 
                                             className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                                         />
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Pour notifier l'arrivée du colis
-                                        </p>
+                                   
                                     </div>
                                 </div>
                             </div>
