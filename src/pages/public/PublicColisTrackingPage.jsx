@@ -138,7 +138,7 @@ const PublicColisTrackingPage = () => {
                       <div className="text-sm space-y-1 pl-8">
                         <p><strong>Itinéraire :</strong> {colis.trajet.villeDepart} → {colis.trajet.villeArrivee}</p>
                         <p><strong>Date de départ prévue :</strong> {new Date(colis.trajet.dateDepart).toLocaleDateString('fr-FR')}</p>
-                        <p><strong>Compagnie :</strong> {colis.trajet.compagnie}</p>
+                        
                       </div>
                   </div>
                 )}

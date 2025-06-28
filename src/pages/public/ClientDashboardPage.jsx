@@ -72,7 +72,6 @@ const TripCard = ({ reservation }) => {
                 </div>
                 <div>
                     <p className="font-bold text-gray-800">{trajet.villeDepart} → {trajet.villeArrivee}</p>
-                    <p className="text-sm text-gray-500 mt-1">{trajet.compagnie}</p>
                 </div>
             </div>
             <span className={`shrink-0 mt-2 sm:mt-0 flex items-center gap-1.5 px-3 py-1 ${statusInfo.style} text-xs font-semibold rounded-full`}>
