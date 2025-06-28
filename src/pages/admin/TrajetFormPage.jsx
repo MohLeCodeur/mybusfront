@@ -136,7 +136,6 @@ const TrajetFormPage = () => {
                                 {Object.keys(CITIES_COORDS).map(city => <option key={city} value={city} />)}
                             </datalist>
                         </div>
-                        <input name="compagnie" value={formData.compagnie} onChange={handleChange} placeholder="Compagnie" required className="w-full border p-2 rounded-md" />
                         <div className="grid md:grid-cols-2 gap-4">
                             <input type="date" name="dateDepart" value={formData.dateDepart} onChange={handleChange} required className="border p-2 rounded-md" />
                             <input type="time" name="heureDepart" value={formData.heureDepart} onChange={handleChange} required className="border p-2 rounded-md" />
