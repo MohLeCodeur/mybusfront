@@ -20,7 +20,12 @@ const ChauffeurFormPage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const busResponse = await api.get('/admin/bus');
+        // --- DÉBUT DE LA CORRECTION ---
+        // On appelle le bon endpoint qui renvoie une liste simple de bus.
+        const busResponse = await api.get('/admin/bus/available');
+        // --- FIN DE LA CORRECTION ---
+        
+        // Maintenant, busResponse.data est bien un tableau.
         setBuses(Array.isArray(busResponse.data) ? busResponse.data : []);
         
         if (isEditMode) {
@@ -58,7 +63,7 @@ const ChauffeurFormPage = () => {
   };
 
   if (formLoading) return <div className="flex justify-center items-center h-96"><FiLoader className="animate-spin text-3xl text-blue-500"/></div>;
-
+  
   return (
     <div className="max-w-2xl mx-auto">
         <Button variant="outline" onClick={() => navigate('/admin/chauffeurs')} className="mb-6 flex items-center gap-2">
