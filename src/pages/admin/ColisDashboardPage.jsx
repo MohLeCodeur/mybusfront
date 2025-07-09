@@ -3,9 +3,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDebounce } from 'use-debounce';
 import api from '../../api';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/Card.jsx';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { FiPlus, FiEdit, FiTrash2, FiLoader, FiChevronLeft, FiChevronRight, FiSearch } from 'react-icons/fi';
+// --- 1. Importer l'icône FiRefreshCw ---
+import { FiPlus, FiEdit, FiTrash2, FiLoader, FiChevronLeft, FiChevronRight, FiSearch, FiRefreshCw } from 'react-icons/fi';
 
 const ColisDashboardPage = () => {
     const navigate = useNavigate();
@@ -26,7 +27,7 @@ const ColisDashboardPage = () => {
         const params = new URLSearchParams({ 
             ...filters, 
             search: debouncedSearch,
-            limit: 10 // Nombre de colis par page
+            limit: 10
         });
         api.get(`/admin/colis?${params.toString()}`)
           .then(res => setData(res.data))
@@ -43,6 +44,16 @@ const ColisDashboardPage = () => {
     const handlePageChange = (newPage) => {
         setFilters(prev => ({...prev, page: newPage}));
     }
+
+    // --- 2. Ajouter la fonction de réinitialisation ---
+    const handleReset = () => {
+        setFilters({
+            search: '',
+            statut: '',
+            sortBy: 'date_desc',
+            page: 1,
+        });
+    };
 
     const handleDelete = async (id, codeSuivi) => {
         if(window.confirm(`Supprimer le colis ${codeSuivi} ?`)){
@@ -82,10 +93,11 @@ const ColisDashboardPage = () => {
                     <div className="flex justify-between items-center">
                         <CardTitle>Liste des Colis ({loading ? '...' : data.total})</CardTitle>
                     </div>
-                    <div className="mt-4 flex flex-col sm:flex-row gap-4">
+                    {/* --- 3. Ajouter le bouton dans le JSX --- */}
+                    <div className="mt-4 flex flex-col sm:flex-row gap-2">
                         <div className="relative flex-grow">
-                             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                             <input 
+                            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input 
                                 type="text" 
                                 placeholder="Rechercher (code, nom, trajet...)" 
                                 value={filters.search} 
@@ -100,12 +112,15 @@ const ColisDashboardPage = () => {
                             <option value="arrivé">Arrivés</option>
                             <option value="annulé">Annulés</option>
                         </select>
-                         <select value={filters.sortBy} onChange={e => handleFilterChange('sortBy', e.target.value)} className="border-gray-300 rounded-md text-sm p-2 bg-white">
+                        <select value={filters.sortBy} onChange={e => handleFilterChange('sortBy', e.target.value)} className="border-gray-300 rounded-md text-sm p-2 bg-white">
                             <option value="date_desc">Trier par : Date (récente)</option>
                             <option value="date_asc">Trier par : Date (ancienne)</option>
                             <option value="price_desc">Trier par : Prix (élevé)</option>
                             <option value="price_asc">Trier par : Prix (faible)</option>
                         </select>
+                        <Button variant="outline" size="sm" onClick={handleReset} className="flex-shrink-0">
+                            <FiRefreshCw className="mr-1"/> Réinitialiser
+                        </Button>
                     </div>
                 </CardHeader>
                 <CardContent>
