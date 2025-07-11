@@ -6,10 +6,11 @@ import { useDebounce } from 'use-debounce';
 import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { FiPlus, FiEdit, FiLoader, FiPlayCircle, FiStopCircle, FiBell, FiChevronDown, FiChevronLeft, FiChevronRight, FiCalendar, FiTag, FiCheckCircle, FiXCircle, FiSearch, FiRefreshCw } from 'react-icons/fi';
-import { FaRoute } from 'react-icons/fa';
+// --- Imports d'icônes mis à jour ---
+import { FiPlus, FiEdit, FiLoader, FiPlayCircle, FiStopCircle, FiBell, FiChevronDown, FiChevronLeft, FiChevronRight, FiCalendar, FiTag, FiCheckCircle, FiXCircle, FiSearch, FiRefreshCw, FiUsers, FiPackage } from 'react-icons/fi';
+import { FaRoute, FaBus } from 'react-icons/fa';
 
-// --- COMPOSANT ACTIONMENU (Logique de gestion des actions, inchangée) ---
+// --- Le composant ActionMenu reste inchangé ---
 const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
   const [processing, setProcessing] = useState(false);
   const fetchTrajets = onActionEnd;
@@ -42,7 +43,6 @@ const ActionMenu = ({ trajet, onActionStart, onActionEnd }) => {
   return null;
 };
 
-// --- COMPOSANT PRINCIPAL DE LA PAGE (LOGIQUE DE PAGINATION CORRIGÉE) ---
 const TrajetListPage = () => {
     const navigate = useNavigate();
     const [data, setData] = useState({ docs: [], total: 0, pages: 1 });
@@ -76,13 +76,10 @@ const TrajetListPage = () => {
 
     useEffect(fetchTrajets, [fetchTrajets]);
     
-    // Fonction pour les filtres qui doivent réinitialiser la page
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
     };
 
-    // --- CORRECTION : FONCTION DÉDIÉE POUR LA PAGINATION ---
-    // Cette fonction ne met à jour que la page, sans réinitialiser les autres filtres.
     const handlePageChange = (newPage) => {
         setFilters(prev => ({ ...prev, page: newPage }));
     };
@@ -114,7 +111,7 @@ const TrajetListPage = () => {
                             <FiSearch className="absolute left-3 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Rechercher (ville, ...)"
+                                placeholder="Rechercher par ville..."
                                 value={filters.search}
                                 onChange={(e) => handleFilterChange('search', e.target.value)}
                                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full md:w-64 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -141,67 +138,76 @@ const TrajetListPage = () => {
                     {loading ? <div className="text-center p-8"><FiLoader className="animate-spin mx-auto text-3xl text-blue-500"/></div> :
                     error ? <p className="text-red-500 bg-red-50 p-4 rounded-lg">{error}</p> :
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {data.docs.length > 0 ? data.docs.map(t => {
-        // --- DÉBUT DE LA CORRECTION ---
-        // Définissons des variables claires pour le statut d'affichage
-        const isFinished = t.liveTrip?.status === 'Terminé';
-        // Un trajet est considéré comme annulé s'il est désactivé OU si son LiveTrip est annulé
-        const isCancelled = !t.isActive || t.liveTrip?.status === 'Annulé';
+                        {data.docs.length > 0 ? data.docs.map(t => {
+                            const isFinished = t.liveTrip?.status === 'Terminé';
+                            const isCancelled = !t.isActive || t.liveTrip?.status === 'Annulé';
+                            const placesOccupees = t.placesReservees || 0;
+                            const capaciteTotale = t.bus?.capacite || 1; // Fallback à 1 pour éviter la division par zéro
+                            const tauxOccupation = (placesOccupees / capaciteTotale) * 100;
 
-        let statusBadge;
-        if (isCancelled) {
-            statusBadge = (
-                <span className="text-xs font-bold px-2 py-1 rounded-full bg-red-100 text-red-800">
-                    Annulé
-                </span>
-            );
-        } else if (isFinished) {
-            statusBadge = (
-                <span className="text-xs font-bold px-2 py-1 rounded-full bg-gray-200 text-gray-800">
-                    Terminé
-                </span>
-            );
-        } else {
-            statusBadge = (
-                <span className="text-xs font-bold px-2 py-1 rounded-full bg-green-100 text-green-800">
-                    Actif
-                </span>
-            );
-        }
-        // --- FIN DE LA CORRECTION ---
+                            let statusBadge;
+                            if (isCancelled) {
+                                statusBadge = <span className="text-xs font-bold px-2 py-1 rounded-full bg-red-100 text-red-800">Annulé</span>;
+                            } else if (isFinished) {
+                                statusBadge = <span className="text-xs font-bold px-2 py-1 rounded-full bg-gray-200 text-gray-800">Terminé</span>;
+                            } else {
+                                statusBadge = <span className="text-xs font-bold px-2 py-1 rounded-full bg-green-100 text-green-800">Actif</span>;
+                            }
 
-        return (
-            <div key={t._id} className="bg-white p-4 rounded-lg border hover:shadow-md transition-shadow flex flex-col justify-between">
-                <div>
-                    <div className="flex justify-between items-start">
-                        <div className="font-bold text-gray-800 flex items-center gap-2"><FaRoute/> {t.villeDepart} → {t.villeArrivee}</div>
-                        {/* On utilise notre badge intelligent ici */}
-                        {statusBadge}
-                    </div>
-                    
-                </div>
-                {/* ... le reste de votre carte reste inchangé ... */}
-                <div className="flex justify-between text-sm text-gray-600 border-y my-3 py-2">
-                    <span className="flex items-center gap-1"><FiCalendar size={14}/> {new Date(t.dateDepart).toLocaleDateString('fr-FR')} - {t.heureDepart}</span>
-                    <span className="flex items-center gap-1 font-semibold"><FiTag size={14}/> {t.prix.toLocaleString()} FCFA</span>
-                </div>
-                <div className="flex justify-between items-center">
-                    <p className="text-xs text-gray-500">Bus: <span className="font-semibold">{t.bus?.numero || 'Non assigné'}</span></p>
-                    <div className="flex gap-2 items-center">
-                        <ActionMenu trajet={t} onActionStart={() => setIsActionProcessing(true)} onActionEnd={fetchTrajets} />
-                        <Button size="sm" variant="outline" onClick={() => navigate(`/admin/trajets/${t._id}/edit`)} title="Modifier" disabled={isActionProcessing}><FiEdit/></Button>
-                    </div>
-                </div>
-            </div>
-        );
-    }) : <p className="col-span-full text-center py-10 text-gray-500">Aucun trajet ne correspond à vos filtres.</p>}
-</div>}
+                            return (
+                                <div key={t._id} className="bg-white p-4 rounded-lg border hover:shadow-md transition-shadow flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex justify-between items-start">
+                                            <div className="font-bold text-gray-800 flex items-center gap-2"><FaRoute/> {t.villeDepart} → {t.villeArrivee}</div>
+                                            {statusBadge}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex justify-between text-sm text-gray-600 border-y my-3 py-2">
+                                        <span className="flex items-center gap-1"><FiCalendar size={14}/> {new Date(t.dateDepart).toLocaleDateString('fr-FR')} - {t.heureDepart}</span>
+                                        <span className="flex items-center gap-1 font-semibold"><FiTag size={14}/> {t.prix.toLocaleString()} FCFA</span>
+                                    </div>
+                                    
+                                    {/* --- DÉBUT DE LA SECTION MISE À JOUR --- */}
+                                    <div className="space-y-3">
+                                        <div className="flex flex-col gap-2 text-xs text-gray-500">
+                                            <div className="flex items-center gap-2">
+                                                <FaBus className="text-blue-500" />
+                                                <span className="font-semibold text-gray-700">{t.bus?.numero || 'Non assigné'}</span>
+                                            </div>
+                                            {t.chauffeur?.prenom && (
+                                                <div className="flex items-center gap-2 pl-1">
+                                                    <FiUsers className="text-green-500" />
+                                                    <span>{t.chauffeur.prenom} {t.chauffeur.nom}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <div>
+                                            <div className="flex items-center justify-between text-xs text-gray-500">
+                                                <span className="flex items-center gap-2"><FiPackage className="text-purple-500"/> Occupation</span>
+                                                <span className="font-medium text-gray-700">{placesOccupees} / {t.bus?.capacite || 'N/A'}</span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                                                <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${tauxOccupation}%` }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {/* --- FIN DE LA SECTION MISE À JOUR --- */}
+                                    
+                                    <div className="flex justify-between items-center mt-4 pt-3 border-t">
+                                        <ActionMenu trajet={t} onActionStart={() => setIsActionProcessing(true)} onActionEnd={fetchTrajets} />
+                                        <Button size="sm" variant="outline" onClick={() => navigate(`/admin/trajets/${t._id}/edit`)} title="Modifier" disabled={isActionProcessing}><FiEdit/></Button>
+                                    </div>
+                                </div>
+                            );
+                        }) : <p className="col-span-full text-center py-10 text-gray-500">Aucun trajet ne correspond à vos filtres.</p>}
+                    </div>}
                 </CardContent>
                 {data.pages > 1 && (
                     <CardFooter className="flex justify-between items-center">
                         <span className="text-sm text-gray-500">Page {filters.page} sur {data.pages}</span>
                         <div className="flex gap-2">
-                            {/* --- CORRECTION : La pagination utilise maintenant handlePageChange --- */}
                             <Button variant="outline" size="sm" onClick={() => handlePageChange(filters.page - 1)} disabled={filters.page === 1}>
                                 <FiChevronLeft className="h-4 w-4"/> Précédent
                             </Button>
