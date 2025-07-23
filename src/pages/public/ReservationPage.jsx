@@ -90,6 +90,7 @@ const ReservationPage = () => {
       
       const redirectUrl = data.checkoutUrl || data.redirect_url;
       if (!redirectUrl) throw new Error("Aucune URL de paiement n'a été reçue.");
+      localStorage.setItem('lastReservationId', data.reservationId);
       
       window.location.href = redirectUrl;
     } catch (err) {
