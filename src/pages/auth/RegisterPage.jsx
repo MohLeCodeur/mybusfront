@@ -2,27 +2,20 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion'; // Pour de belles animations
-// On importe plus d'icônes
+import { motion, AnimatePresence } from 'framer-motion';
 import { FiUserPlus, FiLoader, FiEye, FiEyeOff, FiXCircle, FiCheckCircle } from 'react-icons/fi';
 
 // ====================================================================
-// NOUVEAU : Composant pour une seule règle de validation
+// NOUVEAU : Composant simplifié pour la validation
 // ====================================================================
 const ValidationCriteria = ({ isValid, text }) => {
     return (
-        <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-            className={`flex items-center gap-2 text-sm ${isValid ? 'text-green-600' : 'text-gray-500'}`}
-        >
+        <div className={`flex items-center gap-2 text-sm transition-colors duration-300 ${isValid ? 'text-green-600' : 'text-gray-500'}`}>
             {isValid ? <FiCheckCircle className="shrink-0" /> : <FiXCircle className="shrink-0" />}
             <span>{text}</span>
-        </motion.div>
+        </div>
     );
 };
-
 
 const RegisterPage = () => {
     const [formData, setFormData] = useState({
@@ -32,40 +25,27 @@ const RegisterPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // ====================================================================
-    // NOUVEAU : États pour la visibilité et la validation du mot de passe
-    // ====================================================================
+    // États pour la visibilité des mots de passe
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
-    const [isPasswordFocused, setIsPasswordFocused] = useState(false);
-
-    // État pour suivre chaque critère de validation
+    
+    // État de validation simplifié
     const [validation, setValidation] = useState({
         minLength: false,
-        hasUpper: false,
-        hasLower: false,
-        hasNumber: false,
         passwordsMatch: false,
     });
-    // ====================================================================
 
     const { register } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    // ====================================================================
-    // NOUVEAU : useEffect pour valider le mot de passe en temps réel
-    // ====================================================================
+    // useEffect pour valider en temps réel
     useEffect(() => {
         const { mot_de_passe, confirmPassword } = formData;
         setValidation({
             minLength: mot_de_passe.length >= 8,
-            hasUpper: /[A-Z]/.test(mot_de_passe),
-            hasLower: /[a-z]/.test(mot_de_passe),
-            hasNumber: /[0-9]/.test(mot_de_passe),
             passwordsMatch: mot_de_passe !== '' && mot_de_passe === confirmPassword,
         });
     }, [formData.mot_de_passe, formData.confirmPassword]);
-    // ====================================================================
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -74,10 +54,13 @@ const RegisterPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // On vérifie que tous les critères sont valides avant d'envoyer
-        const allValid = Object.values(validation).every(v => v === true);
-        if (!allValid) {
-            setError("Veuillez vous assurer que votre mot de passe respecte tous les critères.");
+        // On vérifie que les critères simplifiés sont valides
+        if (!validation.minLength) {
+            setError("Le mot de passe doit contenir au moins 8 caractères.");
+            return;
+        }
+        if (!validation.passwordsMatch) {
+            setError("Les mots de passe ne correspondent pas.");
             return;
         }
 
@@ -121,14 +104,13 @@ const RegisterPage = () => {
                     <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" required className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none" />
                     <input type="tel" name="telephone" value={formData.telephone} onChange={handleChange} placeholder="Téléphone (8 chiffres)" className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none" />
                     
-                    {/* --- CHAMP MOT DE PASSE MODIFIÉ --- */}
+                    {/* --- CHAMP MOT DE PASSE --- */}
                     <div className="relative">
                         <input 
                             type={isPasswordVisible ? 'text' : 'password'}
                             name="mot_de_passe" 
                             value={formData.mot_de_passe} 
                             onChange={handleChange} 
-                            onFocus={() => setIsPasswordFocused(true)} // Affiche le validateur au focus
                             placeholder="Mot de passe" 
                             required 
                             className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-pink-400 outline-none pr-10" 
@@ -138,27 +120,7 @@ const RegisterPage = () => {
                         </button>
                     </div>
 
-                    {/* ==================================================================== */}
-                    {/* NOUVEAU : Bloc du validateur de mot de passe */}
-                    {/* ==================================================================== */}
-                    <AnimatePresence>
-                        {isPasswordFocused && (
-                            <motion.div 
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="p-4 bg-gray-50 rounded-lg space-y-2 border border-gray-200"
-                            >
-                                <ValidationCriteria isValid={validation.minLength} text="Au moins 8 caractères" />
-                                <ValidationCriteria isValid={validation.hasUpper} text="Une lettre majuscule" />
-                                <ValidationCriteria isValid={validation.hasLower} text="Une lettre minuscule" />
-                                <ValidationCriteria isValid={validation.hasNumber} text="Un chiffre" />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                    {/* ==================================================================== */}
-
-                    {/* --- CHAMP CONFIRMER MOT DE PASSE MODIFIÉ --- */}
+                    {/* --- CHAMP CONFIRMER MOT DE PASSE --- */}
                     <div className="relative">
                         <input 
                             type={isConfirmPasswordVisible ? 'text' : 'password'}
@@ -167,7 +129,7 @@ const RegisterPage = () => {
                             onChange={handleChange} 
                             placeholder="Confirmer le mot de passe" 
                             required 
-                            className={`w-full border p-3 rounded-lg focus:ring-2 outline-none pr-10 ${
+                            className={`w-full border p-3 rounded-lg focus:ring-2 outline-none pr-10 transition-colors duration-300 ${
                                 formData.confirmPassword ? (validation.passwordsMatch ? 'border-green-500 focus:ring-green-400' : 'border-red-500 focus:ring-red-400') : 'border-gray-300'
                             }`}
                         />
@@ -175,10 +137,26 @@ const RegisterPage = () => {
                             {isConfirmPasswordVisible ? <FiEyeOff /> : <FiEye />}
                         </button>
                     </div>
-                    {/* Affiche un message si la confirmation est tapée mais ne correspond pas */}
-                    {formData.confirmPassword && !validation.passwordsMatch && (
-                        <p className="text-xs text-red-600">Les mots de passe ne correspondent pas.</p>
-                    )}
+
+                    {/* ==================================================================== */}
+                    {/* NOUVEAU : Bloc de validation simplifié */}
+                    {/* ==================================================================== */}
+                    <AnimatePresence>
+                        {formData.mot_de_passe && (
+                             <motion.div 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="p-3 bg-gray-50 rounded-lg space-y-2 border border-gray-200"
+                            >
+                                <ValidationCriteria isValid={validation.minLength} text="Au moins 8 caractères" />
+                                {formData.confirmPassword && (
+                                    <ValidationCriteria isValid={validation.passwordsMatch} text="Les mots de passe correspondent" />
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    {/* ==================================================================== */}
           
                     <button 
                         type="submit" 
