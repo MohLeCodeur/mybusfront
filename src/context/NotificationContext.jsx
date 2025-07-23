@@ -20,7 +20,7 @@ export const NotificationProvider = ({ children }) => {
     // ==========================================================
 
     useEffect(() => {
-        const newSocket = io(import.meta.env.VITE_SOCKET_URL || 'https://mybusback.onrender.com');
+        const newSocket = io(import.meta.env.VITE_SOCKET_URL || 'https://mybusback-js0t.onrender.com');
         setSocket(newSocket);
         return () => newSocket.disconnect();
     }, []);
