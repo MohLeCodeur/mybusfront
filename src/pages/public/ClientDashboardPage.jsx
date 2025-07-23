@@ -1,3 +1,5 @@
+// src/pages/public/ClientDashboardPage.jsx
+
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
@@ -82,7 +84,7 @@ const TripCard = ({ reservation }) => {
 };
 
 // ====================================================================
-// WIDGET INTERNE : Voyage à la une (LOGIQUE CORRIGÉE)
+// WIDGET INTERNE : Voyage à la une
 // ====================================================================
 const FeaturedTripWidget = ({ data }) => {
     if (!data) {
@@ -102,7 +104,6 @@ const FeaturedTripWidget = ({ data }) => {
     
     const isFuture = departureDateTime > new Date();
     const isLive = liveTrip && liveTrip.status === 'En cours';
-    // --- NOUVELLE CONDITION POUR UN VOYAGE TERMINÉ ---
     const isFinished = liveTrip && liveTrip.status === 'Terminé';
 
     return (
@@ -119,7 +120,7 @@ const FeaturedTripWidget = ({ data }) => {
                     <Link to={`/tracking/map/${liveTrip._id}`} className="inline-block px-8 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-lg hover:shadow-green-400/50 text-base animate-pulse">
                         <FiMapPin className="inline mr-2"/> Suivre en Temps Réel
                     </Link>
-                ) : isFinished ? ( // --- NOUVEAU BLOC D'AFFICHAGE POUR LE STATUT "TERMINÉ" ---
+                ) : isFinished ? (
                     <div className="text-center text-green-600">
                         <FiCheckCircle className="mx-auto text-5xl mb-2" />
                         <h4 className="font-bold text-lg">Voyage Terminé</h4>
@@ -139,7 +140,7 @@ const FeaturedTripWidget = ({ data }) => {
 };
 
 // ====================================================================
-// WIDGET INTERNE : Statistiques
+// WIDGET INTERNE : Statistiques (Utilise les nouveaux compteurs)
 // ====================================================================
 const StatsWidget = ({ upcomingCount, pastCount }) => {
     const StatItem = ({ value, label, icon, gradient }) => (
@@ -157,15 +158,15 @@ const StatsWidget = ({ upcomingCount, pastCount }) => {
             <h2 className="text-2xl font-bold text-gray-700 mb-4 flex items-center gap-3"><FiTrendingUp/> En bref</h2>
             <div className="space-y-4">
                 <StatItem value={(upcomingCount || 0) + (pastCount || 0)} label="Voyages au total" icon={<FiAward />} gradient="bg-gradient-to-br from-blue-500 to-blue-400"/>
-                <StatItem value={upcomingCount} label="Voyages à venir" icon={<FiSend />} gradient="bg-gradient-to-br from-pink-500 to-fuchsia-500" />
-                <StatItem value={pastCount} label="Voyages terminés" icon={<FiArchive />} gradient="bg-gradient-to-br from-gray-600 to-gray-500" />
+                <StatItem value={upcomingCount || 0} label="Voyages à venir" icon={<FiSend />} gradient="bg-gradient-to-br from-pink-500 to-fuchsia-500" />
+                <StatItem value={pastCount || 0} label="Voyages terminés" icon={<FiArchive />} gradient="bg-gradient-to-br from-gray-600 to-gray-500" />
             </div>
         </div>
     );
 };
 
 // ====================================================================
-// COMPOSANT PRINCIPAL DE LA PAGE
+// COMPOSANT PRINCIPAL DE LA PAGE (Utilise les nouveaux compteurs)
 // ====================================================================
 const ClientDashboardPage = () => {
     const { user } = useContext(AuthContext);
@@ -212,8 +213,8 @@ const ClientDashboardPage = () => {
                     </div>
                     <div className="lg:col-span-2">
                         <StatsWidget 
-                            upcomingCount={dashboardData?.upcomingTrips?.length || 0} 
-                            pastCount={dashboardData?.pastTrips?.length || 0}
+                            upcomingCount={dashboardData?.upcomingCount} 
+                            pastCount={dashboardData?.pastCount}
                         />
                     </div>
                 </div>
@@ -222,8 +223,8 @@ const ClientDashboardPage = () => {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                         <h2 className="text-2xl font-bold text-gray-700 flex items-center gap-3"><FiStar/> Mes Réservations</h2>
                         <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-full">
-                            <TabButton tabName="upcoming" label="À venir" icon={<FiSend/>} count={dashboardData?.upcomingTrips?.length || 0} />
-                            <TabButton tabName="past" label="Historique" icon={<FiArchive/>} count={dashboardData?.pastTrips?.length || 0} />
+                            <TabButton tabName="upcoming" label="À venir" icon={<FiSend/>} count={dashboardData?.upcomingCount || 0} />
+                            <TabButton tabName="past" label="Historique" icon={<FiArchive/>} count={dashboardData?.pastCount || 0} />
                         </div>
                     </div>
                     
