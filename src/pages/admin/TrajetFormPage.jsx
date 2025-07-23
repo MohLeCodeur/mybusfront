@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { FiSave, FiLoader, FiArrowLeft } from 'react-icons/fi';
+import { FiSave, FiLoader, FiArrowLeft, FiAlertTriangle } from 'react-icons/fi';
 
 const CITIES_COORDS = {
     'Bamako': { lat: 12.6392, lng: -8.0029 }, 'Kayes': { lat: 14.4469, lng: -11.4443 },
@@ -31,7 +31,9 @@ const TrajetFormPage = () => {
         dateDepart: '', heureDepart: '',
         prix: '', placesDisponibles: '', bus: '', isActive: true
     });
+    
     const [buses, setBuses] = useState([]);
+    const [selectedBusInfo, setSelectedBusInfo] = useState(null);
     const [loading, setLoading] = useState(false);
     const [formLoading, setFormLoading] = useState(true);
     const [error, setError] = useState('');
@@ -40,12 +42,19 @@ const TrajetFormPage = () => {
         const loadData = async () => {
             try {
                 const busRes = await api.get('/admin/bus/available');
-                setBuses(Array.isArray(busRes.data) ? busRes.data : []);
+                const availableBuses = Array.isArray(busRes.data) ? busRes.data : [];
+                setBuses(availableBuses);
                 
                 if (isEditMode) {
                     const trajetRes = await api.get(`/public/trajets/${id}`);
-                    const { coordsDepart = {lat:'', lng:''}, coordsArrivee = {lat:'', lng:''}, ...rest } = trajetRes.data;
-                    setFormData({ ...rest, dateDepart: new Date(trajetRes.data.dateDepart).toISOString().split('T')[0], bus: trajetRes.data.bus?._id || '', coordsDepart, coordsArrivee, isActive: typeof trajetRes.data.isActive === 'boolean' ? trajetRes.data.isActive : true });
+                    const trajetData = trajetRes.data;
+                    const { coordsDepart = {lat:'', lng:''}, coordsArrivee = {lat:'', lng:''}, ...rest } = trajetData;
+                    setFormData({ ...rest, dateDepart: new Date(trajetData.dateDepart).toISOString().split('T')[0], bus: trajetData.bus?._id || '', coordsDepart, coordsArrivee, isActive: typeof trajetData.isActive === 'boolean' ? trajetData.isActive : true });
+
+                    if (trajetData.bus?._id) {
+                        const initialBus = availableBuses.find(b => b._id === trajetData.bus._id);
+                        setSelectedBusInfo(initialBus);
+                    }
                 }
             } catch (err) { 
                 setError("Erreur de chargement des données."); 
@@ -69,17 +78,16 @@ const TrajetFormPage = () => {
         setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     };
 
-    // ==========================================================
-    // === NOUVEAU : Gère la sélection d'un bus et met à jour les places ===
-    // ==========================================================
     const handleBusChange = (e) => {
         const selectedBusId = e.target.value;
         const selectedBus = buses.find(b => b._id === selectedBusId);
+        
+        setSelectedBusInfo(selectedBus);
+        setError('');
 
         setFormData(prev => ({
             ...prev,
             bus: selectedBusId,
-            // Si un bus est sélectionné, on prend sa capacité. Sinon, on vide le champ.
             placesDisponibles: selectedBus ? selectedBus.capacite : ''
         }));
     };
@@ -90,15 +98,19 @@ const TrajetFormPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
 
-        // Ajout d'une validation pour s'assurer que les places sont bien définies
+        if (selectedBusInfo && !selectedBusInfo.hasChauffeur) {
+            setError("Le bus sélectionné n'a pas de chauffeur. Veuillez en choisir un autre ou affecter un chauffeur à ce bus.");
+            return;
+        }
+
         if (!formData.placesDisponibles || parseInt(formData.placesDisponibles) <= 0) {
-            setError("Veuillez sélectionner un bus pour définir le nombre de places, ou assurez-vous que les places sont supérieures à zéro.");
+            setError("Veuillez sélectionner un bus pour définir le nombre de places.");
             return;
         }
 
         setLoading(true);
-        setError('');
         try {
             const payload = { ...formData, bus: formData.bus || null };
             payload.prix = parseFloat(payload.prix);
@@ -137,7 +149,6 @@ const TrajetFormPage = () => {
                 <CardContent>
                     {error && <p className="text-red-500 bg-red-50 p-3 rounded-lg mb-4">{error}</p>}
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* ... Champs Ville Depart/Arrivee et Date/Heure (inchangés) ... */}
                         <div className="grid md:grid-cols-2 gap-4">
                             <div>
                                 <label htmlFor="villeDepart" className="block text-sm font-medium text-gray-700 mb-1">Ville de départ</label>
@@ -156,15 +167,22 @@ const TrajetFormPage = () => {
                             <input type="time" name="heureDepart" value={formData.heureDepart} onChange={handleChange} required className="border p-2 rounded-md" />
                         </div>
                         
-                        {/* ========================================================== */}
-                        {/* === SECTION MODIFIÉE : Sélection du bus et places auto === */}
-                        {/* ========================================================== */}
                         <div>
-                            <label htmlFor="bus" className="block text-sm font-medium text-gray-700 mb-1">Associer un bus (obligatoire)</label>
+                            <label htmlFor="bus" className="block text-sm font-medium text-gray-700 mb-1">Associer un bus</label>
                             <select id="bus" name="bus" value={formData.bus} onChange={handleBusChange} className="w-full border p-2 rounded-md bg-white focus:ring-2 focus:ring-blue-500" required>
-                                <option value="">— Sélectionner un bus —</option>
-                                {buses.map(b => <option key={b._id} value={b._id} disabled={b.etat !== 'en service'}>{b.numero} ({b.capacite} places, {b.etat})</option>)}
+                                <option value="">— Sélectionner un bus avec chauffeur —</option>
+                                {buses.map(b => (
+                                    <option key={b._id} value={b._id} disabled={b.etat !== 'en service'}>
+                                        {b.numero} ({b.capacite} places) {b.hasChauffeur ? '✓ Chauffeur' : '✗ SANS CHAUFFEUR'}
+                                    </option>
+                                ))}
                             </select>
+                            {selectedBusInfo && !selectedBusInfo.hasChauffeur && (
+                                <div className="mt-2 p-3 bg-yellow-50 text-yellow-800 rounded-lg flex items-center gap-2 text-sm border border-yellow-200">
+                                    <FiAlertTriangle />
+                                    <span>Ce bus n'a pas de chauffeur. Vous ne pouvez pas créer de trajet avec.</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-4">
@@ -179,18 +197,14 @@ const TrajetFormPage = () => {
                                     id="placesDisponibles"
                                     name="placesDisponibles" 
                                     value={formData.placesDisponibles} 
-                                    readOnly // L'utilisateur ne peut pas modifier ce champ
+                                    readOnly 
                                     placeholder="Auto (selon le bus)" 
                                     required 
                                     className="border p-2 rounded-md w-full bg-gray-100 cursor-not-allowed focus:ring-0" 
                                 />
                             </div>
                         </div>
-                        {/* ========================================================== */}
-                        {/* === FIN DE LA SECTION MODIFIÉE === */}
-                        {/* ========================================================== */}
-
-                        {/* ... Le reste du formulaire (Coordonnées, isActive, Bouton) est inchangé ... */}
+                        
                         <div className="space-y-4 pt-4 border-t">
                             <div className="p-4 border rounded-lg bg-gray-50">
                                 <h3 className="font-medium mb-2 text-gray-700">Coordonnées de Départ (auto-remplies)</h3>
