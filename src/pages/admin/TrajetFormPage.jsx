@@ -28,7 +28,7 @@ const TrajetFormPage = () => {
     const [formData, setFormData] = useState({
         villeDepart: '', villeArrivee: '',
         coordsDepart: { lat: '', lng: '' }, coordsArrivee: { lat: '', lng: '' },
-         dateDepart: '', heureDepart: '',
+        dateDepart: '', heureDepart: '',
         prix: '', placesDisponibles: '', bus: '', isActive: true
     });
     const [buses, setBuses] = useState([]);
@@ -39,14 +39,7 @@ const TrajetFormPage = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                // ====================================================================
-                // --- DÉBUT DE LA CORRECTION : Utiliser le nouvel endpoint ---
-                // ====================================================================
                 const busRes = await api.get('/admin/bus/available');
-                // ====================================================================
-                // --- FIN DE LA CORRECTION ---
-                // ====================================================================
-                
                 setBuses(Array.isArray(busRes.data) ? busRes.data : []);
                 
                 if (isEditMode) {
@@ -76,12 +69,34 @@ const TrajetFormPage = () => {
         setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     };
 
+    // ==========================================================
+    // === NOUVEAU : Gère la sélection d'un bus et met à jour les places ===
+    // ==========================================================
+    const handleBusChange = (e) => {
+        const selectedBusId = e.target.value;
+        const selectedBus = buses.find(b => b._id === selectedBusId);
+
+        setFormData(prev => ({
+            ...prev,
+            bus: selectedBusId,
+            // Si un bus est sélectionné, on prend sa capacité. Sinon, on vide le champ.
+            placesDisponibles: selectedBus ? selectedBus.capacite : ''
+        }));
+    };
+
     const handleCoordChange = (point, coord, value) => {
         setFormData(prev => ({ ...prev, [point]: { ...prev[point], [coord]: value } }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Ajout d'une validation pour s'assurer que les places sont bien définies
+        if (!formData.placesDisponibles || parseInt(formData.placesDisponibles) <= 0) {
+            setError("Veuillez sélectionner un bus pour définir le nombre de places, ou assurez-vous que les places sont supérieures à zéro.");
+            return;
+        }
+
         setLoading(true);
         setError('');
         try {
@@ -89,7 +104,6 @@ const TrajetFormPage = () => {
             payload.prix = parseFloat(payload.prix);
             payload.placesDisponibles = parseInt(payload.placesDisponibles);
             
-            // S'assurer que les coordonnées sont bien des nombres
             if(payload.coordsDepart) {
                 payload.coordsDepart.lat = parseFloat(payload.coordsDepart.lat);
                 payload.coordsDepart.lng = parseFloat(payload.coordsDepart.lng);
@@ -123,6 +137,7 @@ const TrajetFormPage = () => {
                 <CardContent>
                     {error && <p className="text-red-500 bg-red-50 p-3 rounded-lg mb-4">{error}</p>}
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* ... Champs Ville Depart/Arrivee et Date/Heure (inchangés) ... */}
                         <div className="grid md:grid-cols-2 gap-4">
                             <div>
                                 <label htmlFor="villeDepart" className="block text-sm font-medium text-gray-700 mb-1">Ville de départ</label>
@@ -140,14 +155,42 @@ const TrajetFormPage = () => {
                             <input type="date" name="dateDepart" value={formData.dateDepart} onChange={handleChange} required className="border p-2 rounded-md" />
                             <input type="time" name="heureDepart" value={formData.heureDepart} onChange={handleChange} required className="border p-2 rounded-md" />
                         </div>
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <input type="number" name="prix" value={formData.prix} onChange={handleChange} placeholder="Prix (FCFA)" required className="border p-2 rounded-md" />
-                            <input type="number" name="placesDisponibles" value={formData.placesDisponibles} onChange={handleChange} placeholder="Places disponibles" required className="border p-2 rounded-md" />
+                        
+                        {/* ========================================================== */}
+                        {/* === SECTION MODIFIÉE : Sélection du bus et places auto === */}
+                        {/* ========================================================== */}
+                        <div>
+                            <label htmlFor="bus" className="block text-sm font-medium text-gray-700 mb-1">Associer un bus (obligatoire)</label>
+                            <select id="bus" name="bus" value={formData.bus} onChange={handleBusChange} className="w-full border p-2 rounded-md bg-white focus:ring-2 focus:ring-blue-500" required>
+                                <option value="">— Sélectionner un bus —</option>
+                                {buses.map(b => <option key={b._id} value={b._id} disabled={b.etat !== 'en service'}>{b.numero} ({b.capacite} places, {b.etat})</option>)}
+                            </select>
                         </div>
-                        <select name="bus" value={formData.bus} onChange={handleChange} className="w-full border p-2 rounded-md bg-gray-50">
-                            <option value="">— Associer un bus (optionnel) —</option>
-                            {buses.map(b => <option key={b._id} value={b._id} disabled={b.etat !== 'en service'}>{b.numero} ({b.etat})</option>)}
-                        </select>
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="prix" className="block text-sm font-medium text-gray-700 mb-1">Prix du billet (FCFA)</label>
+                                <input type="number" id="prix" name="prix" value={formData.prix} onChange={handleChange} placeholder="Ex: 10000" required className="border p-2 rounded-md w-full" />
+                            </div>
+                            <div>
+                                <label htmlFor="placesDisponibles" className="block text-sm font-medium text-gray-700 mb-1">Places Disponibles</label>
+                                <input 
+                                    type="number" 
+                                    id="placesDisponibles"
+                                    name="placesDisponibles" 
+                                    value={formData.placesDisponibles} 
+                                    readOnly // L'utilisateur ne peut pas modifier ce champ
+                                    placeholder="Auto (selon le bus)" 
+                                    required 
+                                    className="border p-2 rounded-md w-full bg-gray-100 cursor-not-allowed focus:ring-0" 
+                                />
+                            </div>
+                        </div>
+                        {/* ========================================================== */}
+                        {/* === FIN DE LA SECTION MODIFIÉE === */}
+                        {/* ========================================================== */}
+
+                        {/* ... Le reste du formulaire (Coordonnées, isActive, Bouton) est inchangé ... */}
                         <div className="space-y-4 pt-4 border-t">
                             <div className="p-4 border rounded-lg bg-gray-50">
                                 <h3 className="font-medium mb-2 text-gray-700">Coordonnées de Départ (auto-remplies)</h3>
