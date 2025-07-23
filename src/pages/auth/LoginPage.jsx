@@ -1,8 +1,8 @@
 // src/pages/auth/LoginPage.jsx
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
-import { FiLogIn, FiLoader } from 'react-icons/fi';
+import { FiLogIn, FiLoader, FiCheckCircle } from 'react-icons/fi';
 import { FaUserAlt, FaLock } from 'react-icons/fa';
 
 const LoginPage = () => {
@@ -14,8 +14,24 @@ const LoginPage = () => {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // On récupère le message passé par la page d'inscription.
+  const successMessageFromState = location.state?.message;
+  const [successMessage, setSuccessMessage] = useState(successMessageFromState);
   
   const from = location.state?.from?.pathname || '/dashboard';
+
+  // Effacer le message de succès après quelques secondes
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+        // On nettoie aussi l'état de la navigation
+        navigate(location.pathname, { replace: true, state: {} });
+      }, 5000); // Disparaît après 5 secondes
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, location.pathname, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,11 +40,9 @@ const LoginPage = () => {
     try {
       const user = await login(email, password);
       
-      // Redirige vers le bon dashboard en fonction du rôle
       if (user.role === 'admin') {
         navigate('/admin/dashboard', { replace: true });
       } else {
-        // Redirige le client vers la page d'où il venait, ou son dashboard par défaut
         navigate(from, { replace: true });
       }
     } catch (err) {
@@ -41,7 +55,15 @@ const LoginPage = () => {
     <div className="flex-grow flex items-center justify-center p-4">
       <div className="bg-white shadow-2xl rounded-3xl p-8 md:p-12 w-full max-w-md">
         <h2 className="text-3xl font-extrabold text-center text-pink-600 mb-8 font-playfair">Connexion</h2>
+        
+        {/* Affichage des messages de succès ou d'erreur */}
+        {successMessage && (
+            <div className="text-green-700 bg-green-50 text-center p-3 rounded-lg mb-4 flex items-center justify-center gap-2">
+                <FiCheckCircle /> {successMessage}
+            </div>
+        )}
         {error && <p className="text-red-500 bg-red-50 text-center p-3 rounded-lg mb-4">{error}</p>}
+        
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-gray-700 font-semibold mb-1">Email</label>
@@ -68,4 +90,5 @@ const LoginPage = () => {
     </div>
   );
 };
+
 export default LoginPage;

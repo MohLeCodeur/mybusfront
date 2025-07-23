@@ -26,7 +26,7 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Simple vérification de la correspondance des mots de passe côté client
+    // Vérification de la correspondance des mots de passe
     if (formData.mot_de_passe !== formData.confirmPassword) {
       setError("Les mots de passe ne correspondent pas.");
       return;
@@ -35,9 +35,8 @@ const RegisterPage = () => {
     setLoading(true);
     setError('');
     try {
-      // On envoie les données directement au backend.
-      // C'est le backend qui validera tout (longueur mdp, format email, format tel, etc.)
-      const user = await register({
+      // La fonction 'register' ne renvoie plus l'utilisateur, mais un message de succès.
+      await register({
         prenom: formData.prenom,
         nom: formData.nom,
         email: formData.email,
@@ -45,12 +44,12 @@ const RegisterPage = () => {
         mot_de_passe: formData.mot_de_passe
       });
       
-      // Redirection si succès
-      if (user.role === 'admin') {
-        navigate('/admin/dashboard', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
-      }
+      // En cas de succès, on redirige vers la page de connexion
+      // On passe un message via l'état de la navigation pour une meilleure UX.
+      navigate('/login', { 
+        replace: true, 
+        state: { message: 'Inscription réussie ! Vous pouvez maintenant vous connecter.' } 
+      });
 
     } catch (err) {
       // On affiche le message d'erreur renvoyé par le backend
@@ -85,8 +84,6 @@ const RegisterPage = () => {
           />
           <input type="password" name="mot_de_passe" value={formData.mot_de_passe} onChange={handleChange} placeholder="Mot de passe (8 caractères min.)" required className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-pink-400 outline-none" />
           <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Confirmer le mot de passe" required className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-pink-400 outline-none" />
-          
-          {/* La liste de validation en temps réel a été supprimée */}
           
           <button 
             type="submit" 

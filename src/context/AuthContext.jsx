@@ -1,6 +1,6 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect, useCallback } from "react";
-import api from '../api'; // Important : on importe notre instance configurée
+import api from '../api';
 
 const AuthContext = createContext();
 
@@ -8,7 +8,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ... (le reste du code pour fetchUserProfile et logout reste le même)
   const fetchUserProfile = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -30,9 +29,7 @@ export const AuthProvider = ({ children }) => {
     fetchUserProfile();
   }, [fetchUserProfile]);
 
-
   const login = async (email, password) => {
-    // Cet appel va maintenant construire l'URL : 'http://localhost:5000/api' + '/auth/login'
     const { data } = await api.post("/auth/login", { email, mot_de_passe: password });
     localStorage.setItem("token", data.token);
     setUser(data);
@@ -40,10 +37,10 @@ export const AuthProvider = ({ children }) => {
   };
   
   const register = async (userData) => {
-      // Cet appel va maintenant construire l'URL : 'http://localhost:5000/api' + '/auth/register'
+      // On fait l'appel API. La réponse ne contiendra plus de token.
       const { data } = await api.post("/auth/register", userData);
-      localStorage.setItem("token", data.token);
-      setUser(data);
+      // On ne met plus à jour le token ou l'utilisateur ici.
+      // On renvoie simplement la réponse, qui contient le message de succès.
       return data;
   };
 
@@ -51,7 +48,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
     setUser(null);
   };
-  // ...
 
   const value = { user, loading, login, register, logout };
 
