@@ -4,18 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../../api';
 import { FiCheck, FiDownload, FiCalendar, FiClock, FiUsers, FiLoader, FiMapPin } from 'react-icons/fi';
 import { FaTicketAlt, FaBus } from 'react-icons/fa';
-
-// ==========================================================
-// === DÉBUT DE LA CORRECTION : CHANGEMENT DE BIBLIOTHÈQUE ===
-// ==========================================================
-// On retire 'toPng' de 'html-to-image'
-// import { toPng } from 'html-to-image';
-// On importe la nouvelle bibliothèque
-import html2canvas from 'html2canvas';
-// ==========================================================
-// === FIN DE LA CORRECTION ===
-// ==========================================================
-
+import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 
 const ConfirmationPage = () => {
@@ -38,44 +27,55 @@ const ConfirmationPage = () => {
     setDownloading(true);
 
     const ticketNode = ticketRef.current;
+    let dataUrl;
+
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.left = '-10000px';
+    tempContainer.style.top = '0';
+    tempContainer.style.width = '800px';
+    document.body.appendChild(tempContainer);
+
+    const ticketClone = ticketNode.cloneNode(true);
+    ticketClone.style.width = '100%';
+    ticketClone.style.margin = '0';
+    tempContainer.appendChild(ticketClone);
+
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-        // ==========================================================
-        // === DÉBUT DE LA CORRECTION : Utilisation de html2canvas ===
-        // ==========================================================
-        const canvas = await html2canvas(ticketNode, {
-            useCORS: true, // Important pour que les images externes se chargent
-            scale: 2.5,    // Équivalent de pixelRatio pour une meilleure qualité
-            backgroundColor: '#ffffff',
+        dataUrl = await toPng(ticketClone, {
+            quality: 1.0,
+            pixelRatio: 2.5,
+            backgroundColor: 'white',
         });
-
-        const dataUrl = canvas.toDataURL('image/png', 1.0);
-        // ==========================================================
-        // === FIN DE LA CORRECTION ===
-        // ==========================================================
-
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const img = new Image();
-        img.src = dataUrl;
-        
-        await new Promise(resolve => { img.onload = resolve; });
-
-        const imgWidth = pdfWidth - 20;
-        const imgHeight = (img.height * imgWidth) / img.width;
-        const x = 10;
-        const y = (pdfHeight - imgHeight) / 2;
-
-        pdf.addImage(dataUrl, 'PNG', x, y > 0 ? y : 0, imgWidth, imgHeight);
-        pdf.save(`MyBus-Ticket-${reservationId}.pdf`);
-
     } catch (err) {
         console.error('Erreur de capture d\'image:', err);
         alert("Une erreur est survenue lors de la création de l'image du ticket.");
-    } finally {
         setDownloading(false);
+        document.body.removeChild(tempContainer);
+        return;
     }
+
+    document.body.removeChild(tempContainer);
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const img = new Image();
+    img.src = dataUrl;
+    
+    await new Promise(resolve => { img.onload = resolve; });
+
+    const imgWidth = pdfWidth - 20;
+    const imgHeight = (img.height * imgWidth) / img.width;
+    const x = 10;
+    const y = (pdfHeight - imgHeight) / 2;
+
+    pdf.addImage(dataUrl, 'PNG', x, y > 0 ? y : 0, imgWidth, imgHeight);
+    pdf.save(`MyBus-Ticket-${reservationId}.pdf`);
+    
+    setDownloading(false);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><FiLoader className="text-5xl text-pink-500 animate-spin" /></div>;
@@ -83,7 +83,6 @@ const ConfirmationPage = () => {
   
   const formattedDate = new Date(reservation.trajet.dateDepart).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   
-  // Le JSX reste absolument identique
   return (
     <main className="py-16 px-4 min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto">
@@ -97,6 +96,7 @@ const ConfirmationPage = () => {
           </div></div></div>
         </div>
 
+        {/* --- TICKET COMPLET --- */}
         <div ref={ticketRef} className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 relative mx-auto max-w-2xl">
           <div className="bg-gradient-to-r from-pink-500 to-blue-600 py-6 px-8 text-white flex justify-between items-center">
               <div><h2 className="text-2xl font-bold">MyBus</h2><p className="text-sm opacity-90">E-Ticket de Voyage</p></div>
@@ -104,22 +104,28 @@ const ConfirmationPage = () => {
           </div>
           <div className="p-8">
             <div className="border-t-2 border-dashed border-gray-200 relative -mx-8 mb-8"><div className="absolute -left-3 -top-2.5 h-5 w-5 rounded-full bg-gray-50"></div><div className="absolute -right-3 -top-2.5 h-5 w-5 rounded-full bg-gray-50"></div></div>
+            
             <div className="mb-8 text-center"><span className="text-sm text-gray-500">N° de Réservation</span><h3 className="text-2xl font-bold text-gray-800 font-mono">{reservation._id}</h3></div>
+            
             <div className="flex justify-between items-center mb-8">
                 <div className="text-center w-2/5"><div className="text-sm text-gray-500">Départ</div><div className="text-xl font-bold">{reservation.trajet.villeDepart}</div></div>
                 <div className="w-1/5 flex justify-center text-blue-500"><FaBus className="text-3xl"/></div>
                 <div className="text-center w-2/5"><div className="text-sm text-gray-500">Arrivée</div><div className="text-xl font-bold">{reservation.trajet.villeArrivee}</div></div>
             </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 bg-gray-50/70 p-4 rounded-lg">
               <div className="flex items-center gap-3"><div className="bg-pink-100 p-3 rounded-full"><FiCalendar className="text-pink-500"/></div><div><div className="text-sm text-gray-500">Date</div><div className="font-medium">{formattedDate}</div></div></div>
               <div className="flex items-center gap-3"><div className="bg-blue-100 p-3 rounded-full"><FiClock className="text-blue-500"/></div><div><div className="text-sm text-gray-500">Heure</div><div className="font-medium">{reservation.trajet.heureDepart}</div></div></div>
             </div>
+            
             <div className="mb-8">
               <h4 className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3"><FiUsers /> Passager(s) ({reservation.placesReservees})</h4>
               <div className="bg-gray-50/70 rounded-xl p-4 space-y-2 text-sm">
                 {reservation.passagers.map((p, index) => <p key={index} className="font-medium">{p.prenom} {p.nom}</p>)}
               </div>
             </div>
+            
+            {/* --- SECTION CORRIGÉE ET CENTRÉE --- */}
             <div className="flex flex-col sm:flex-row justify-center items-center gap-x-8 gap-y-4 mb-8 text-sm text-center">
                 <div>
                     <strong className="block text-gray-500">Bus N°</strong>
@@ -130,18 +136,22 @@ const ConfirmationPage = () => {
                     <span className="font-medium">{reservation.placesReservees}</span>
                 </div>
             </div>
+            
             <div className="flex justify-between items-center border-t border-dashed pt-6">
               <div className="text-lg font-medium">Total Payé</div>
               <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-blue-600">
                 {(reservation.trajet.prix * reservation.placesReservees).toLocaleString('fr-FR')} FCFA
               </div>
             </div>
+
             <div className="text-center mt-8 pt-6 border-t border-dashed border-gray-200 text-sm text-gray-500">
                 <p>Présentez ce ticket (imprimé ou sur votre téléphone) à l'embarquement.</p>
                 <p className="font-medium mt-1">MyBus vous souhaite un excellent voyage !</p>
             </div>
+            
           </div>
         </div>
+
         <div className="text-center mt-12">
           <button onClick={handleDownloadTicket} disabled={downloading} className="px-8 py-3 rounded-full font-semibold text-white flex items-center justify-center gap-2 mx-auto transition bg-gradient-to-r from-pink-500 to-blue-600 hover:brightness-105 active:scale-95 disabled:bg-gray-400">
             {downloading ? <><FiLoader className="animate-spin" /> Génération...</> : <><FiDownload /> Télécharger le billet</>}
