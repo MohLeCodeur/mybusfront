@@ -4,37 +4,8 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../../api';
 import { FiCheck, FiDownload, FiCalendar, FiClock, FiUsers, FiLoader, FiMapPin } from 'react-icons/fi';
 import { FaTicketAlt, FaBus } from 'react-icons/fa';
-import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-
-// ====================================================================
-// --- DÉBUT DE LA CORRECTION DÉFINITIVE POUR FIREFOX ---
-// ====================================================================
-
-/**
- * Fonction utilitaire pour récupérer toutes les règles CSS de la page.
- * C'est essentiel pour que html-to-image puisse utiliser les polices personnalisées
- * (comme Google Fonts) correctement sur tous les navigateurs, notamment Firefox.
- */
-const getAllCssAsText = () => {
-    // On transforme la collection de feuilles de style en un vrai tableau
-    return Array.from(document.styleSheets)
-        // On transforme chaque feuille de style en une chaîne de texte
-        .map(styleSheet => {
-            try {
-                // Pour chaque feuille de style, on récupère ses règles CSS
-                return Array.from(styleSheet.cssRules)
-                    .map(rule => rule.cssText) // On convertit chaque règle en texte
-                    .join('\n'); // On joint les règles avec un retour à la ligne
-            } catch (e) {
-                // Si une erreur se produit (ex: feuille de style cross-origin), on l'ignore
-                console.warn("Impossible de lire les règles d'une feuille de style (probablement cross-origin) : ", styleSheet.href);
-                return ''; // On retourne une chaîne vide pour cette feuille
-            }
-        })
-        .join('\n'); // On joint le contenu de toutes les feuilles de style
-};
-
+import html2canvas from 'html2canvas';
 
 const ConfirmationPage = () => {
   const { id: reservationId } = useParams();
@@ -51,61 +22,82 @@ const ConfirmationPage = () => {
       .finally(() => setLoading(false));
   }, [reservationId]);
 
-  /**
-   * Gestionnaire de téléchargement de ticket, maintenant compatible avec Firefox.
-   */
   const handleDownloadTicket = async () => {
-    const ticketElement = ticketRef.current;
-    if (!ticketElement || downloading) return;
-
+    if (!ticketRef.current || downloading) return;
     setDownloading(true);
 
     try {
-        // On récupère toutes les CSS de la page, y compris Google Fonts.
-        const allCssText = getAllCssAsText();
+      // Utilisation de html2canvas qui est plus compatible avec Firefox
+      const canvas = await html2canvas(ticketRef.current, {
+        scale: 2, // Meilleure qualité
+        useCORS: true, // Pour les images cross-origin
+        logging: false, // Désactive les logs
+        backgroundColor: '#ffffff',
+        windowWidth: ticketRef.current.scrollWidth,
+        windowHeight: ticketRef.current.scrollHeight,
+        onclone: (clonedDoc) => {
+          // S'assurer que le clone est bien rendu
+          const clonedElement = clonedDoc.getElementById('ticket-content');
+          if (clonedElement) {
+            clonedElement.style.display = 'block';
+            clonedElement.style.position = 'relative';
+            clonedElement.style.width = '100%';
+          }
+        }
+      });
 
-        const dataUrl = await toPng(ticketElement, {
-            quality: 0.98,
-            pixelRatio: 2,
-            backgroundColor: 'white',
-            // L'option cruciale : on injecte les polices et styles manuellement.
-            fontEmbedCss: allCssText,
-            cacheBust: true, // Empêche le cache de causer des problèmes
+      // Créer le PDF
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Calculer les dimensions pour centrer l'image
+      const imgWidth = pdfWidth - 20; // Marges de 10mm de chaque côté
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Position verticale pour centrer si l'image est plus petite que la page
+      const yPosition = imgHeight < pdfHeight ? (pdfHeight - imgHeight) / 2 : 10;
+      
+      // Ajouter l'image au PDF
+      pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, imgHeight);
+      
+      // Sauvegarder le PDF
+      pdf.save(`MyBus-Ticket-${reservationId}.pdf`);
+      
+    } catch (error) {
+      console.error('Erreur lors de la génération du PDF:', error);
+      
+      // Fallback : téléchargement en tant qu'image si le PDF échoue
+      try {
+        const canvas = await html2canvas(ticketRef.current, {
+          scale: 2,
+          backgroundColor: '#ffffff'
         });
         
-        // La logique de création du PDF reste la même
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `MyBus-Ticket-${reservationId}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
         });
-
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 15;
-
-        const img = new Image();
-        img.src = dataUrl;
-
-        await new Promise(resolve => { img.onload = resolve; });
-
-        const imgWidth = pdfWidth - (margin * 2);
-        const imgHeight = (img.height * imgWidth) / img.width;
-        let y = (pdfHeight - imgHeight) / 2;
-
-        pdf.addImage(dataUrl, 'PNG', margin, y > margin ? y : margin, imgWidth, imgHeight);
-        pdf.save(`MyBus-Ticket-${reservationId}.pdf`);
-
-    } catch (err) {
-        console.error("Erreur détaillée lors de la génération du PDF:", err);
-        alert("Une erreur est survenue lors de la création du ticket. Veuillez réessayer.");
+      } catch (fallbackError) {
+        console.error('Erreur lors du fallback:', fallbackError);
+        alert("Impossible de générer le ticket. Veuillez faire une capture d'écran de cette page.");
+      }
     } finally {
-        setDownloading(false);
+      setDownloading(false);
     }
   };
-  // ====================================================================
-  // --- FIN DE LA CORRECTION ---
-  // ====================================================================
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><FiLoader className="text-5xl text-pink-500 animate-spin" /></div>;
   if (error || !reservation) return <div className="min-h-screen flex items-center justify-center text-center p-4"><div className="bg-white p-8 rounded-2xl shadow-xl max-w-md"><h1 className="text-2xl font-bold mb-4 text-red-600">Erreur</h1><p className="text-gray-600 mb-6">{error || "Réservation introuvable."}</p><Link to="/" className="text-blue-600">Retour</Link></div></div>;
@@ -125,7 +117,8 @@ const ConfirmationPage = () => {
           </div></div></div>
         </div>
 
-        <div ref={ticketRef} className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 relative mx-auto max-w-2xl">
+        {/* --- TICKET COMPLET --- */}
+        <div id="ticket-content" ref={ticketRef} className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 relative mx-auto max-w-2xl">
           <div className="bg-gradient-to-r from-pink-500 to-blue-600 py-6 px-8 text-white flex justify-between items-center">
               <div><h2 className="text-2xl font-bold">MyBus</h2><p className="text-sm opacity-90">E-Ticket de Voyage</p></div>
               <FaTicketAlt className="text-4xl opacity-80" />
@@ -190,4 +183,3 @@ const ConfirmationPage = () => {
 };
 
 export default ConfirmationPage;
-//dois marcher
