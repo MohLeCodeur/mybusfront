@@ -7,6 +7,35 @@ import { FaTicketAlt, FaBus } from 'react-icons/fa';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 
+// ====================================================================
+// --- DÉBUT DE LA CORRECTION DÉFINITIVE POUR FIREFOX ---
+// ====================================================================
+
+/**
+ * Fonction utilitaire pour récupérer toutes les règles CSS de la page.
+ * C'est essentiel pour que html-to-image puisse utiliser les polices personnalisées
+ * (comme Google Fonts) correctement sur tous les navigateurs, notamment Firefox.
+ */
+const getAllCssAsText = () => {
+    // On transforme la collection de feuilles de style en un vrai tableau
+    return Array.from(document.styleSheets)
+        // On transforme chaque feuille de style en une chaîne de texte
+        .map(styleSheet => {
+            try {
+                // Pour chaque feuille de style, on récupère ses règles CSS
+                return Array.from(styleSheet.cssRules)
+                    .map(rule => rule.cssText) // On convertit chaque règle en texte
+                    .join('\n'); // On joint les règles avec un retour à la ligne
+            } catch (e) {
+                // Si une erreur se produit (ex: feuille de style cross-origin), on l'ignore
+                console.warn("Impossible de lire les règles d'une feuille de style (probablement cross-origin) : ", styleSheet.href);
+                return ''; // On retourne une chaîne vide pour cette feuille
+            }
+        })
+        .join('\n'); // On joint le contenu de toutes les feuilles de style
+};
+
+
 const ConfirmationPage = () => {
   const { id: reservationId } = useParams();
   const [reservation, setReservation] = useState(null);
@@ -22,9 +51,9 @@ const ConfirmationPage = () => {
       .finally(() => setLoading(false));
   }, [reservationId]);
 
-  // ====================================================================
-  // --- DÉBUT DE LA CORRECTION : GESTIONNAIRE DE TÉLÉCHARGEMENT AMÉLIORÉ ---
-  // ====================================================================
+  /**
+   * Gestionnaire de téléchargement de ticket, maintenant compatible avec Firefox.
+   */
   const handleDownloadTicket = async () => {
     const ticketElement = ticketRef.current;
     if (!ticketElement || downloading) return;
@@ -32,17 +61,19 @@ const ConfirmationPage = () => {
     setDownloading(true);
 
     try {
-        // Options pour html-to-image optimisées pour la compatibilité
-        const options = {
-            quality: 0.98, // Garde une haute qualité
-            pixelRatio: 2,   // Utilise un ratio plus standard et compatible que 2.5
-            backgroundColor: 'white', // Assure un fond non transparent
-        };
+        // On récupère toutes les CSS de la page, y compris Google Fonts.
+        const allCssText = getAllCssAsText();
 
-        // On capture directement l'élément du DOM en PNG
-        const dataUrl = await toPng(ticketElement, options);
+        const dataUrl = await toPng(ticketElement, {
+            quality: 0.98,
+            pixelRatio: 2,
+            backgroundColor: 'white',
+            // L'option cruciale : on injecte les polices et styles manuellement.
+            fontEmbedCss: allCssText,
+            cacheBust: true, // Empêche le cache de causer des problèmes
+        });
         
-        // Logique de création du PDF avec jsPDF
+        // La logique de création du PDF reste la même
         const pdf = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
@@ -51,40 +82,23 @@ const ConfirmationPage = () => {
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 15; // Marge de 1.5 cm de chaque côté
+        const margin = 15;
 
         const img = new Image();
         img.src = dataUrl;
 
-        // Attendre que l'image soit chargée pour avoir ses dimensions
-        await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = (err) => {
-                console.error("Erreur de chargement de l'image Data URL", err);
-                reject(new Error("Impossible de charger l'image générée."));
-            };
-        });
+        await new Promise(resolve => { img.onload = resolve; });
 
         const imgWidth = pdfWidth - (margin * 2);
         const imgHeight = (img.height * imgWidth) / img.width;
-        
-        let finalImgHeight = imgHeight;
-        let y = margin;
-        
-        // Si l'image est plus haute que la page, on la réduit pour qu'elle tienne
-        if (imgHeight > (pdfHeight - (margin * 2))) {
-            finalImgHeight = pdfHeight - (margin * 2);
-        } else {
-             // Sinon, on la centre verticalement
-            y = (pdfHeight - imgHeight) / 2;
-        }
+        let y = (pdfHeight - imgHeight) / 2;
 
-        pdf.addImage(dataUrl, 'PNG', margin, y, imgWidth, finalImgHeight);
+        pdf.addImage(dataUrl, 'PNG', margin, y > margin ? y : margin, imgWidth, imgHeight);
         pdf.save(`MyBus-Ticket-${reservationId}.pdf`);
 
     } catch (err) {
-        console.error("Erreur lors de la génération du PDF:", err);
-        alert("Une erreur est survenue lors de la création du ticket. Veuillez réessayer ou essayer avec un autre navigateur (Chrome est recommandé).");
+        console.error("Erreur détaillée lors de la génération du PDF:", err);
+        alert("Une erreur est survenue lors de la création du ticket. Veuillez réessayer.");
     } finally {
         setDownloading(false);
     }
@@ -111,7 +125,6 @@ const ConfirmationPage = () => {
           </div></div></div>
         </div>
 
-        {/* --- TICKET COMPLET --- */}
         <div ref={ticketRef} className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 relative mx-auto max-w-2xl">
           <div className="bg-gradient-to-r from-pink-500 to-blue-600 py-6 px-8 text-white flex justify-between items-center">
               <div><h2 className="text-2xl font-bold">MyBus</h2><p className="text-sm opacity-90">E-Ticket de Voyage</p></div>
