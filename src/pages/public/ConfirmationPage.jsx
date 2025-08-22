@@ -22,61 +22,76 @@ const ConfirmationPage = () => {
       .finally(() => setLoading(false));
   }, [reservationId]);
 
+  // ====================================================================
+  // --- DÉBUT DE LA CORRECTION : GESTIONNAIRE DE TÉLÉCHARGEMENT AMÉLIORÉ ---
+  // ====================================================================
   const handleDownloadTicket = async () => {
-    if (!ticketRef.current || downloading) return;
+    const ticketElement = ticketRef.current;
+    if (!ticketElement || downloading) return;
+
     setDownloading(true);
 
-    const ticketNode = ticketRef.current;
-    let dataUrl;
-
-    const tempContainer = document.createElement('div');
-    tempContainer.style.position = 'absolute';
-    tempContainer.style.left = '-10000px';
-    tempContainer.style.top = '0';
-    tempContainer.style.width = '800px';
-    document.body.appendChild(tempContainer);
-
-    const ticketClone = ticketNode.cloneNode(true);
-    ticketClone.style.width = '100%';
-    ticketClone.style.margin = '0';
-    tempContainer.appendChild(ticketClone);
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-
     try {
-        dataUrl = await toPng(ticketClone, {
-            quality: 1.0,
-            pixelRatio: 2.5,
-            backgroundColor: 'white',
+        // Options pour html-to-image optimisées pour la compatibilité
+        const options = {
+            quality: 0.98, // Garde une haute qualité
+            pixelRatio: 2,   // Utilise un ratio plus standard et compatible que 2.5
+            backgroundColor: 'white', // Assure un fond non transparent
+        };
+
+        // On capture directement l'élément du DOM en PNG
+        const dataUrl = await toPng(ticketElement, options);
+        
+        // Logique de création du PDF avec jsPDF
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
         });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 15; // Marge de 1.5 cm de chaque côté
+
+        const img = new Image();
+        img.src = dataUrl;
+
+        // Attendre que l'image soit chargée pour avoir ses dimensions
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = (err) => {
+                console.error("Erreur de chargement de l'image Data URL", err);
+                reject(new Error("Impossible de charger l'image générée."));
+            };
+        });
+
+        const imgWidth = pdfWidth - (margin * 2);
+        const imgHeight = (img.height * imgWidth) / img.width;
+        
+        let finalImgHeight = imgHeight;
+        let y = margin;
+        
+        // Si l'image est plus haute que la page, on la réduit pour qu'elle tienne
+        if (imgHeight > (pdfHeight - (margin * 2))) {
+            finalImgHeight = pdfHeight - (margin * 2);
+        } else {
+             // Sinon, on la centre verticalement
+            y = (pdfHeight - imgHeight) / 2;
+        }
+
+        pdf.addImage(dataUrl, 'PNG', margin, y, imgWidth, finalImgHeight);
+        pdf.save(`MyBus-Ticket-${reservationId}.pdf`);
+
     } catch (err) {
-        console.error('Erreur de capture d\'image:', err);
-        alert("Une erreur est survenue lors de la création de l'image du ticket.");
+        console.error("Erreur lors de la génération du PDF:", err);
+        alert("Une erreur est survenue lors de la création du ticket. Veuillez réessayer ou essayer avec un autre navigateur (Chrome est recommandé).");
+    } finally {
         setDownloading(false);
-        document.body.removeChild(tempContainer);
-        return;
     }
-
-    document.body.removeChild(tempContainer);
-
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const img = new Image();
-    img.src = dataUrl;
-    
-    await new Promise(resolve => { img.onload = resolve; });
-
-    const imgWidth = pdfWidth - 20;
-    const imgHeight = (img.height * imgWidth) / img.width;
-    const x = 10;
-    const y = (pdfHeight - imgHeight) / 2;
-
-    pdf.addImage(dataUrl, 'PNG', x, y > 0 ? y : 0, imgWidth, imgHeight);
-    pdf.save(`MyBus-Ticket-${reservationId}.pdf`);
-    
-    setDownloading(false);
   };
+  // ====================================================================
+  // --- FIN DE LA CORRECTION ---
+  // ====================================================================
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><FiLoader className="text-5xl text-pink-500 animate-spin" /></div>;
   if (error || !reservation) return <div className="min-h-screen flex items-center justify-center text-center p-4"><div className="bg-white p-8 rounded-2xl shadow-xl max-w-md"><h1 className="text-2xl font-bold mb-4 text-red-600">Erreur</h1><p className="text-gray-600 mb-6">{error || "Réservation introuvable."}</p><Link to="/" className="text-blue-600">Retour</Link></div></div>;
@@ -125,7 +140,6 @@ const ConfirmationPage = () => {
               </div>
             </div>
             
-            {/* --- SECTION CORRIGÉE ET CENTRÉE --- */}
             <div className="flex flex-col sm:flex-row justify-center items-center gap-x-8 gap-y-4 mb-8 text-sm text-center">
                 <div>
                     <strong className="block text-gray-500">Bus N°</strong>
