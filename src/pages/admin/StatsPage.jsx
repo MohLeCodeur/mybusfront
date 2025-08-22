@@ -6,14 +6,14 @@ import { Button } from '../../components/ui/Button.jsx';
 import { ResponsiveContainer, BarChart, LineChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 import { FiLoader, FiDollarSign, FiPackage, FiUsers, FiBarChart2, FiTrendingUp, FiCheckSquare, FiAlertCircle } from 'react-icons/fi';
 
-// --- COMPOSANT STAT CARD (INCHANGÉ) ---
+// --- COMPOSANT STAT CARD CORRIGÉ ---
 const StatCard = ({ title, value, icon, loading, colorClass, description }) => (
-    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <Card className="h-full flex flex-col shadow-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">{title}</CardTitle>
             <div className={`text-2xl ${colorClass}`}>{icon}</div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-grow">
             {loading ? 
                 <div className="h-8 bg-gray-200 rounded-md w-3/4 animate-pulse"></div> :
                 <div className="text-3xl font-bold text-gray-800">{value}</div>
@@ -56,7 +56,6 @@ const StatsPage = () => {
     const [summary, setSummary] = useState({});
     const [chartData, setChartData] = useState([]);
     
-    // <--- MODIFICATION : Initialiser l'état pour les données des colis --->
     const [performance, setPerformance] = useState({ topRoutes: [], topParcelDestinations: [] });
     
     const [loadingSummary, setLoadingSummary] = useState(true);
@@ -75,7 +74,7 @@ const StatsPage = () => {
             .then(([summaryRes, performanceRes]) => {
                 setSummary(summaryRes.data.summary);
                 setChartData(summaryRes.data.chartData);
-                setPerformance(performanceRes.data); // Le backend renvoie maintenant l'objet complet
+                setPerformance(performanceRes.data);
             })
             .catch(err => setError(err.response?.data?.message || 'Erreur de chargement des données.'))
             .finally(() => {
@@ -108,7 +107,6 @@ const StatsPage = () => {
             
             {error && <div className="p-4 bg-red-100 text-red-700 rounded-lg flex items-center gap-2"><FiAlertCircle/> {error}</div>}
 
-            {/* --- Section des KPIs (inchangée) --- */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <StatCard 
                     title="Revenu Total" 
@@ -144,7 +142,6 @@ const StatsPage = () => {
                 />
             </div>
             
-            {/* --- Section du graphique (inchangée) --- */}
             <Card className="shadow-xl border-t-4 border-gray-200">
                 <CardHeader>
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -184,7 +181,6 @@ const StatsPage = () => {
                 </CardContent>
             </Card>
 
-            {/* <--- DÉBUT DE LA SECTION MODIFIÉE : Insights de performance ---> */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <PerformanceTable
                     icon={<FiTrendingUp/>}
@@ -207,7 +203,6 @@ const StatsPage = () => {
                     loading={loadingPerformance}
                 />
             </div>
-            {/* <--- FIN DE LA SECTION MODIFIÉE ---> */}
         </div>
     );
 };

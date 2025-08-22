@@ -6,15 +6,15 @@ import { FiUsers, FiBox, FiTrendingUp, FiLoader, FiArrowRight } from 'react-icon
 import api from '../../api';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card.jsx';
 
-// --- Le composant StatCard reste inchangé ---
+// --- LE COMPOSANT STATCARD CORRIGÉ ---
 const StatCard = ({ title, value, icon, link, loading }) => (
     <Link to={link} className="block group">
-        <Card className="hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+        <Card className="h-full flex flex-col hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-500">{title}</CardTitle>
                 {icon}
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-grow">
                 {loading ? (
                     <FiLoader className="animate-spin text-2xl text-gray-300" />
                 ) : (
@@ -30,20 +30,15 @@ const StatCard = ({ title, value, icon, link, loading }) => (
 
 
 const DashboardPage = () => {
-  // --- L'état initial est maintenant plus simple ---
   const [stats, setStats] = useState({ busCount: 0, chauffeurCount: 0, colisCount: 0, reservationCount: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ====================================================================
-  // --- DÉBUT DE LA CORRECTION : LOGIQUE DE FETCH ENTIÈREMENT SIMPLIFIÉE ---
-  // ====================================================================
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // On fait un seul appel à notre nouvel endpoint optimisé
         const { data } = await api.get('/admin/stats/overview');
-        setStats(data); // La réponse correspond directement à notre état
+        setStats(data);
       } catch (err) {
         setError("Impossible de charger les données du tableau de bord.");
       } finally {
@@ -51,10 +46,7 @@ const DashboardPage = () => {
       }
     };
     fetchStats();
-  }, []); // Le tableau de dépendances est vide, l'appel se fait une seule fois.
-  // ====================================================================
-  // --- FIN DE LA CORRECTION ---
-  // ====================================================================
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -65,7 +57,6 @@ const DashboardPage = () => {
       
       {error && <p className="text-red-500 bg-red-50 p-4 rounded-lg">{error}</p>}
 
-      {/* Cartes de KPIs (le JSX ne change pas, il va juste recevoir les bonnes données) */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Bus au Total" 
@@ -97,7 +88,6 @@ const DashboardPage = () => {
         />
       </div>
 
-      {/* Section des Actions Rapides ou Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
              <h2 className="font-bold text-lg text-gray-700 mb-4">Prochaines Étapes</h2>
