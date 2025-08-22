@@ -30,23 +30,29 @@ const ConfirmationPage = () => {
       // Utilisation de html2canvas qui est plus compatible avec Firefox
       const canvas = await html2canvas(ticketRef.current, {
         scale: 2, // Meilleure qualité
-        useCORS: true, // Pour les images cross-origin
-        logging: false, // Désactive les logs
+        useCORS: true,
+        logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: ticketRef.current.scrollWidth,
-        windowHeight: ticketRef.current.scrollHeight,
+        // ====================================================================
+        // --- DÉBUT DE LA CORRECTION ---
+        // 'onclone' nous permet de modifier l'élément juste avant la capture,
+        // sans affecter l'affichage pour l'utilisateur.
+        // ====================================================================
         onclone: (clonedDoc) => {
-          // S'assurer que le clone est bien rendu
-          const clonedElement = clonedDoc.getElementById('ticket-content');
-          if (clonedElement) {
-            clonedElement.style.display = 'block';
-            clonedElement.style.position = 'relative';
-            clonedElement.style.width = '100%';
+          // On cible l'élément du prix total grâce à son ID.
+          const priceElement = clonedDoc.querySelector('#total-price-display');
+          if (priceElement) {
+            // On retire les classes qui posent problème à html2canvas.
+            priceElement.classList.remove('text-transparent', 'bg-clip-text', 'bg-gradient-to-r', 'from-pink-500', 'to-blue-600');
+            // On ajoute une simple classe de couleur de texte qui sera bien rendue.
+            priceElement.classList.add('text-pink-600');
           }
         }
+        // ====================================================================
+        // --- FIN DE LA CORRECTION ---
+        // ====================================================================
       });
 
-      // Créer le PDF
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -57,43 +63,17 @@ const ConfirmationPage = () => {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // Calculer les dimensions pour centrer l'image
-      const imgWidth = pdfWidth - 20; // Marges de 10mm de chaque côté
+      const imgWidth = pdfWidth - 20;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Position verticale pour centrer si l'image est plus petite que la page
       const yPosition = imgHeight < pdfHeight ? (pdfHeight - imgHeight) / 2 : 10;
       
-      // Ajouter l'image au PDF
       pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, imgHeight);
-      
-      // Sauvegarder le PDF
       pdf.save(`MyBus-Ticket-${reservationId}.pdf`);
       
     } catch (error) {
       console.error('Erreur lors de la génération du PDF:', error);
-      
-      // Fallback : téléchargement en tant qu'image si le PDF échoue
-      try {
-        const canvas = await html2canvas(ticketRef.current, {
-          scale: 2,
-          backgroundColor: '#ffffff'
-        });
-        
-        canvas.toBlob((blob) => {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `MyBus-Ticket-${reservationId}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        });
-      } catch (fallbackError) {
-        console.error('Erreur lors du fallback:', fallbackError);
-        alert("Impossible de générer le ticket. Veuillez faire une capture d'écran de cette page.");
-      }
+      alert("Impossible de générer le ticket. Veuillez faire une capture d'écran de cette page.");
     } finally {
       setDownloading(false);
     }
@@ -118,7 +98,7 @@ const ConfirmationPage = () => {
         </div>
 
         {/* --- TICKET COMPLET --- */}
-        <div id="ticket-content" ref={ticketRef} className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 relative mx-auto max-w-2xl">
+        <div ref={ticketRef} className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 relative mx-auto max-w-2xl">
           <div className="bg-gradient-to-r from-pink-500 to-blue-600 py-6 px-8 text-white flex justify-between items-center">
               <div><h2 className="text-2xl font-bold">MyBus</h2><p className="text-sm opacity-90">E-Ticket de Voyage</p></div>
               <FaTicketAlt className="text-4xl opacity-80" />
@@ -129,7 +109,7 @@ const ConfirmationPage = () => {
             <div className="mb-8 text-center"><span className="text-sm text-gray-500">N° de Réservation</span><h3 className="text-2xl font-bold text-gray-800 font-mono">{reservation._id}</h3></div>
             
             <div className="flex justify-between items-center mb-8">
-                <div className="text-center w-2/5"><div className="text-sm text-gray-500">Départ</div><div className="text-xl font-bold">{reservation.trajet.villeDepart}</div></div>
+              <div className="text-center w-2/5"><div className="text-sm text-gray-500">Départ</div><div className="text-xl font-bold">{reservation.trajet.villeDepart}</div></div>
                 <div className="w-1/5 flex justify-center text-blue-500"><FaBus className="text-3xl"/></div>
                 <div className="text-center w-2/5"><div className="text-sm text-gray-500">Arrivée</div><div className="text-xl font-bold">{reservation.trajet.villeArrivee}</div></div>
             </div>
@@ -159,7 +139,8 @@ const ConfirmationPage = () => {
             
             <div className="flex justify-between items-center border-t border-dashed pt-6">
               <div className="text-lg font-medium">Total Payé</div>
-              <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-blue-600">
+              {/* --- LIGNE MODIFIÉE : Ajout de l'ID 'total-price-display' --- */}
+              <div id="total-price-display" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-blue-600">
                 {(reservation.trajet.prix * reservation.placesReservees).toLocaleString('fr-FR')} FCFA
               </div>
             </div>
@@ -168,7 +149,6 @@ const ConfirmationPage = () => {
                 <p>Présentez ce ticket (imprimé ou sur votre téléphone) à l'embarquement.</p>
                 <p className="font-medium mt-1">MyBus vous souhaite un excellent voyage !</p>
             </div>
-            
           </div>
         </div>
 
